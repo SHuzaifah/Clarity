@@ -53,39 +53,50 @@ export function Sidebar() {
     return (
         <aside
             className={cn(
-                "hidden h-full bg-background md:flex flex-col border-r transition-all duration-300 ease-in-out overflow-y-auto shrink-0 group z-40",
-                isCollapsed ? "w-[72px] hover:w-64 relative" : "w-64"
+                "hidden h-full bg-background md:flex flex-col border-r transition-all duration-300 ease-in-out overflow-y-auto shrink-0 z-40",
+                isCollapsed ? "w-[72px]" : "w-64"
             )}
         >
-            <div className="flex flex-col gap-2 p-4 flex-1">
-                <div className="px-2 py-2">
-                    <h2 className={cn(
-                        "mb-2 px-2 text-lg font-semibold tracking-tight transition-all duration-300 whitespace-nowrap overflow-hidden",
-                        isCollapsed ? "opacity-0 w-0 group-hover:w-auto group-hover:opacity-100" : "opacity-100"
-                    )}>
-                        Discover
-                    </h2>
-                    <div className="space-y-1">
-                        {sidebarItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    "flex items-center gap-4 rounded-lg px-3 py-3 transition-colors hover:bg-accent hover:text-accent-foreground min-h-[48px]",
-                                    pathname === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-                                    isCollapsed && "justify-start" // Always justify start to align icons
-                                )}
-                                title={isCollapsed ? item.title : undefined}
-                            >
-                                <item.icon className="h-5 w-5 shrink-0" />
-                                <span className={cn(
-                                    "text-sm font-medium whitespace-nowrap transition-all duration-300",
-                                    isCollapsed ? "opacity-0 w-0 overflow-hidden group-hover:w-auto group-hover:opacity-100" : "opacity-100"
-                                )}>
-                                    {item.title}
-                                </span>
-                            </Link>
-                        ))}
+            <div className={cn("flex flex-col gap-2 p-2 flex-1", !isCollapsed && "p-4")}>
+                <div className="py-2">
+                    {!isCollapsed && (
+                        <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">
+                            Discover
+                        </h2>
+                    )}
+                    <div className={cn("space-y-1", isCollapsed && "flex flex-col gap-2 items-center")}>
+                        {sidebarItems.map((item) => {
+                            const isActive = pathname === item.href;
+
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center transition-all duration-200 group relative",
+                                        isCollapsed
+                                            ? "h-12 w-12 justify-center rounded-2xl"
+                                            : "gap-4 rounded-lg px-3 py-3 min-h-[48px]",
+                                        isActive
+                                            ? (isCollapsed ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground")
+                                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    )}
+                                    title={isCollapsed ? item.title : undefined}
+                                >
+                                    <item.icon className={cn(
+                                        "shrink-0 transition-transform duration-200",
+                                        isCollapsed ? "h-6 w-6" : "h-5 w-5",
+                                        isActive && isCollapsed && "scale-110"
+                                    )} />
+
+                                    {!isCollapsed && (
+                                        <span className="text-sm font-medium whitespace-nowrap">
+                                            {item.title}
+                                        </span>
+                                    )}
+                                </Link>
+                            );
+                        })}
                     </div>
                 </div>
 
