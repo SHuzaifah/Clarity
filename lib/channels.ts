@@ -89,6 +89,34 @@ export const CHANNELS: Channel[] = [
         description: "DSA, algorithmic patterns, and interview prep.",
         badge: "Algorithms · Interview"
     },
+    {
+        name: "Gate Smashers",
+        category: "TECH · CODING · AI",
+        handle: "GateSmashers",
+        description: "Simplified CS concepts for GATE and university exams.",
+        badge: "CS · Exams"
+    },
+    {
+        name: "CodeWithHarry",
+        category: "TECH · CODING · AI",
+        handle: "CodeWithHarry",
+        description: "Programming tutorials in Hindi/English.",
+        badge: "Coding · Hindi"
+    },
+    {
+        name: "Gohar Khan",
+        category: "PRODUCTIVITY · FOCUS · SYSTEMS",
+        handle: "goharkhan",
+        description: "Student hacks and study tips.",
+        badge: "Student · Tips"
+    },
+    {
+        name: "Better Ideas",
+        category: "PRODUCTIVITY · FOCUS · SYSTEMS",
+        handle: "BetterIdeas",
+        description: "Ideas to help you improve your life.",
+        badge: "Growth · Ideas"
+    },
 
     // EDUCATIONAL (Formerly Science)
     {
@@ -140,6 +168,55 @@ export const CHANNELS: Channel[] = [
         description: "Making physics accessbile to every student.",
         badge: "Physics · JEE"
     },
+    {
+        name: "Unacademy",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "unacademy",
+        description: "India's largest free education initiative.",
+        badge: "Competitive Exams"
+    },
+    {
+        name: "Vedantu",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "VedantuInnovations",
+        description: "Live online learning for personalized attention.",
+        badge: "K-12 · JEE/NEET"
+    },
+    {
+        name: "BYJU'S",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "Byjus",
+        description: "Visual learning programs for K-12 students.",
+        badge: "K-12 · Concepts"
+    },
+    {
+        name: "FloatHeadPhysics",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "FloatHeadPhysics",
+        description: "Intuitiive physics explanations and visualizations.",
+        badge: "Physics · Visuals"
+    },
+    {
+        name: "PW Class 11 Science",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "ScienceWallah", // Best guess or 'PhysicsWallah' var
+        description: "Dedicated science curriculum for Class 11.",
+        badge: "Class 11 · Science"
+    },
+    {
+        name: "Andrew Huberman",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "hubermanlab",
+        description: "Science and tools for everyday life.",
+        badge: "Neuroscience · Health"
+    },
+    {
+        name: "Your SAT Coach",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "YourSATCoach", // Assuming handle
+        description: "Expert strategies for the Digital SAT.",
+        badge: "SAT Preparation"
+    },
 
     // FINANCE
     {
@@ -185,5 +262,12 @@ export const CHANNELS: Channel[] = [
         handle: "lexfridman",
         description: " Conversations about AI, science, nature, and power.",
         badge: "Podcast · Deep"
+    },
+    {
+        name: "Nathaniel Drew",
+        category: "THINKING · PHILOSOPHY · LONG-FORM",
+        handle: "nathanieldrew",
+        description: "Mental clarity and intentional living.",
+        badge: "Lifestyle · Philosophy"
     },
 ];
