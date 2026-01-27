@@ -47,6 +47,7 @@ export function Header() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <ModeToggle />
                     <Link href="/profile">
                         <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" title="Profile">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold border border-primary/20">
