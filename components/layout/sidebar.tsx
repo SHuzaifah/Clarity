@@ -54,7 +54,7 @@ export function Sidebar() {
         <aside
             className={cn(
                 "hidden h-full bg-background md:flex flex-col border-r transition-all duration-300 ease-in-out overflow-y-auto shrink-0",
-                isCollapsed ? "w-16" : "w-64"
+                isCollapsed ? "w-[72px]" : "w-64"
             )}
         >
             <div className="flex flex-col gap-2 p-4 flex-1">
@@ -66,14 +66,24 @@ export function Sidebar() {
                                 key={item.href}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                                    pathname === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-                                    isCollapsed && "justify-center px-2"
+                                    "flex items-center rounded-lg py-2 transition-colors hover:bg-accent hover:text-accent-foreground",
+                                    isCollapsed
+                                        ? "flex-col justify-center gap-1 px-1 h-16"
+                                        : "flex-row gap-3 px-3 min-h-[40px] text-sm font-medium",
+                                    pathname === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                                 )}
                                 title={isCollapsed ? item.title : undefined}
                             >
-                                <item.icon className="h-4 w-4" />
-                                {!isCollapsed && item.title}
+                                <item.icon className={cn(
+                                    isCollapsed ? "h-6 w-6" : "h-4 w-4"
+                                )} />
+                                {isCollapsed ? (
+                                    <span className="text-[10px] text-center w-full truncate leading-tight">
+                                        {item.title}
+                                    </span>
+                                ) : (
+                                    <span>{item.title}</span>
+                                )}
                             </Link>
                         ))}
                     </div>
