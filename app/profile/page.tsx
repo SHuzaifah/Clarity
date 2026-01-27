@@ -9,14 +9,46 @@ import { User, Mail, AlertTriangle, X } from "lucide-react";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { deleteAccount } from "@/lib/actions/settings";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect } from "react";
 
 export default function ProfilePage() {
-    const [name, setName] = useState("Syed Ghouse");
-    const [email, setEmail] = useState("shuzaifah02@gmail.com");
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [confirmText, setConfirmText] = useState("");
     const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
+    const supabase = createClient();
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                setEmail(user.email || "");
+                setName(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "");
+            }
+            setIsLoading(false);
+        };
+        getUser();
+    }, []);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        const { error } = await supabase.auth.updateUser({
+            data: { full_name: name }
+        });
+
+        if (error) {
+            alert(`Error updating profile: ${error.message}`);
+        } else {
+            alert("Profile updated successfully");
+            router.refresh();
+        }
+        setIsSaving(false);
+    };
 
     const handleDeleteAccount = async () => {
         if (confirmText !== "DELETE") {
@@ -100,7 +132,9 @@ export default function ProfilePage() {
 
                     <div className="flex items-center justify-end gap-2">
                         <SignOutButton />
-                        <Button>Save Changes</Button>
+                        <Button onClick={handleSave} disabled={isSaving || isLoading}>
+                            {isSaving ? "Saving..." : "Save Changes"}
+                        </Button>
                     </div>
 
                     {/* Danger Zone - After action buttons */}
