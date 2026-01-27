@@ -4,18 +4,29 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { Icons } from "@/components/icons"
 import Link from "next/link"
-import { useState, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { useState, Suspense, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { ArrowLeft, Sparkles } from "lucide-react"
 
 function LoginForm() {
+    const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const searchParams = useSearchParams()
     const error = searchParams.get("error")
+    const supabase = createClient()
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                router.push('/dashboard')
+            }
+        }
+        checkUser()
+    }, [router, supabase])
 
     const handleLogin = async () => {
         setIsLoading(true)
-        const supabase = createClient()
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
