@@ -33,11 +33,7 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-4">
             <ModeToggle />
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="hidden sm:flex">
-                Sign In
-              </Button>
-            </Link>
+
             <Link href="/dashboard">
               <Button size="sm" className="rounded-full px-6">
                 Get Started

@@ -42,10 +42,10 @@ function LoginForm() {
                     <Sparkles className="h-6 w-6 text-primary" />
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight">
-                    Welcome back
+                    Welcome to Clarity
                 </h1>
                 <p className="text-base text-muted-foreground">
-                    Sign in to continue mastering what you watch.
+                    Sign in to start mastering what you watch.
                 </p>
             </div>
 
