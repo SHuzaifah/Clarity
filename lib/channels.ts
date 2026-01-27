@@ -203,6 +203,13 @@ export const CHANNELS: Channel[] = [
         description: "Study tips, hacks, and advice for students.",
         badge: "Study Tips · Guide"
     },
+    {
+        name: "FloatHeadPhysics",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "Mahesh_Shenoy",
+        description: "Visual and intuitive explanations of physics concepts.",
+        badge: "Physics · Science"
+    },
 
     // FINANCE
     {
