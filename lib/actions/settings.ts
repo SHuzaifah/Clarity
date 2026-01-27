@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function clearWatchHistory() {
@@ -106,7 +106,16 @@ export async function deleteAccount() {
     await supabase.from('watch_history').delete().eq('user_id', user.id);
 
     // 5. Finally delete the user account
-    const { error } = await supabase.auth.admin.deleteUser(user.id);
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.error("SUPABASE_SERVICE_ROLE_KEY is missing. Cannot delete user auth.");
+        // We return success true here because all data is gone, but the auth user remains.
+        // This prevents the user from being stuck in a "partial delete" state error loop.
+        // However, we should sign them out.
+        return { success: false, error: "Configuration error: Missing Service Role Key. Data deleted but account remains." };
+    }
+
+    const adminSupabase = await createAdminClient();
+    const { error } = await adminSupabase.auth.admin.deleteUser(user.id);
 
     if (error) {
         return { success: false, error: error.message };
