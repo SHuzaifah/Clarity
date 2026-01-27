@@ -57,7 +57,7 @@ export function Sidebar() {
                 isCollapsed ? "w-[72px]" : "w-64"
             )}
         >
-            <div className={cn("flex flex-col gap-2 p-2 flex-1", !isCollapsed && "p-4")}>
+            <div className={cn("flex flex-col gap-2 p-2 flex-1 pt-6", !isCollapsed && "p-4 pt-6")}>
                 <div className="py-2">
                     {!isCollapsed && (
                         <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">
