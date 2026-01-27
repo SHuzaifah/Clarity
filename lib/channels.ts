@@ -32,13 +32,6 @@ export const CHANNELS: Channel[] = [
         badge: "Systems · Notion"
     },
     {
-        name: "Cal Newport",
-        category: "PRODUCTIVITY · FOCUS · SYSTEMS",
-        handle: "CalNewport",
-        description: "Deep work, digital minimalism, and career craftsmanship.",
-        badge: "Deep Work · Focus"
-    },
-    {
         name: "Matt D'Avella",
         category: "PRODUCTIVITY · FOCUS · SYSTEMS",
         handle: "MattDavella",
