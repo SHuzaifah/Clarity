@@ -140,6 +140,69 @@ export const CHANNELS: Channel[] = [
         description: "Making physics accessbile to every student.",
         badge: "Physics · JEE"
     },
+    {
+        name: "JEE Nexus by Unacademy",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "jeenexus",
+        description: "Strategic guidance and preparation for JEE aspirants.",
+        badge: "JEE · Strategy"
+    },
+    {
+        name: "Next Toppers - 11th Science",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "nexttoppersscience",
+        description: "Comprehensive 11th grade science curriculum coverage.",
+        badge: "11th Science · Basics"
+    },
+    {
+        name: "Abdul Bari",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "abdul_bari",
+        description: "Mastering algorithms, data structures, and computer science.",
+        badge: "CS · Algorithms"
+    },
+    {
+        name: "LearnSATMath",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "learnsatmath",
+        description: "Focused SAT math preparation and practice problems.",
+        badge: "SAT · Math"
+    },
+    {
+        name: "BrainStation",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "brain_station_videos",
+        description: "Educational animations and explanations on various topics.",
+        badge: "Education · Variety"
+    },
+    {
+        name: "Your SAT Coach",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "yoursatcoach",
+        description: "Expert tips, strategies, and coaching for the SAT.",
+        badge: "SAT · Tips"
+    },
+    {
+        name: "PW - 11th Science",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "pwudayclass11th",
+        description: "Physics Wallah's dedicated channel for 11th science.",
+        badge: "11th · Physics"
+    },
+    {
+        name: "The Organic Chemistry Tutor",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "theorganicchemistrytutor",
+        description: "Tutorials on chemistry, math, physics, and biology.",
+        badge: "STEM · Help"
+    },
+    {
+        name: "Gohar Khan",
+        category: "EDUCATIONAL · SCIENCE · ACADEMIC",
+        handle: "goharsguide",
+        description: "Study tips, hacks, and advice for students.",
+        badge: "Study Tips · Guide"
+    },
 
     // FINANCE
     {
