@@ -53,7 +53,7 @@ export function Sidebar() {
     return (
         <aside
             className={cn(
-                "hidden h-full bg-muted/40 md:flex flex-col border-r transition-all duration-300 ease-in-out overflow-y-auto shrink-0",
+                "hidden h-full bg-background md:flex flex-col border-r transition-all duration-300 ease-in-out overflow-y-auto shrink-0",
                 isCollapsed ? "w-16" : "w-64"
             )}
         >

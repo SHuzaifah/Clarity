@@ -30,7 +30,7 @@ export function AppShell({ children }: AppShellProps) {
 
     return (
         <AppShellContext.Provider value={{ isCollapsed, toggleSidebar }}>
-            <div className="flex h-screen w-full bg-muted/40 overflow-hidden">
+            <div className="flex h-screen w-full bg-background overflow-hidden">
                 <Sidebar />
                 <div className="flex flex-col flex-1 overflow-hidden transition-all duration-300 ease-in-out">
                     <Header />
