@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { X, CheckCircle, FileText, Play, Pause, Sparkles, ChevronRight, Volume2, VolumeX, Maximize, SkipForward, Rewind, PenTool } from "lucide-react";
+import { X, CheckCircle, FileText, Play, Pause, Sparkles, ChevronRight, Volume2, VolumeX, Maximize, SkipForward, Rewind, PenTool, Download, Copy, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import YouTube, { YouTubeProps, YouTubePlayer } from "react-youtube";
+import { jsPDF } from "jspdf";
 
 import { addToHistory, getWatchHistory } from "@/lib/actions/history";
 import { addToCollection, removeFromCollection, checkVideoSavedStatus } from "@/lib/actions/collections";
@@ -60,6 +61,108 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
 
     const [saved, setSaved] = useState(false);
     const [descOpen, setDescOpen] = useState(false);
+
+    // Export State
+    const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+    const handleExport = (format: 'md' | 'pdf' | 'txt') => {
+        const dateStr = new Date().toLocaleDateString();
+
+        if (format === 'md') {
+            const mdContent = `# ${title}
+**Date:** ${dateStr}
+**Video:** [Link](https://www.youtube.com/watch?v=${videoId})
+
+## Summary
+${notes.summary || "No summary."}
+
+## Notes
+${notes.jot || "No notes."}
+`;
+            navigator.clipboard.writeText(mdContent);
+            // Brief visual feedback could be improved, but this works
+            alert("Copied Markdown to clipboard!");
+        } else if (format === 'txt') {
+            const content = `Title: ${title}
+Date: ${dateStr}
+Video: https://www.youtube.com/watch?v=${videoId}
+
+Summary:
+${notes.summary || "No summary."}
+
+Notes:
+${notes.jot || "No notes."}
+            `;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_notes.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } else if (format === 'pdf') {
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 15;
+            const maxLineWidth = pageWidth - (margin * 2);
+
+            doc.setFontSize(16);
+            doc.text(title.substring(0, 50) + (title.length > 50 ? "..." : ""), margin, 20);
+
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Date: ${dateStr}`, margin, 30);
+            doc.setTextColor(0);
+
+            let y = 45;
+
+            if (notes.summary) {
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("Summary", margin, y);
+                y += 7;
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(10);
+
+                const splitSummary = doc.splitTextToSize(notes.summary, maxLineWidth);
+                doc.text(splitSummary, margin, y);
+                y += splitSummary.length * 5 + 10;
+            }
+
+            if (notes.jot) {
+                if (y > 250) { doc.addPage(); y = 20; }
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("Notes", margin, y);
+                y += 7;
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(10);
+
+                const splitJot = doc.splitTextToSize(notes.jot, maxLineWidth);
+                doc.text(splitJot, margin, y);
+                y += splitJot.length * 5 + 10;
+            }
+
+            if (notes.canvas && typeof notes.canvas === 'string') {
+                if (y > 200) { doc.addPage(); y = 20; }
+                try {
+                    // Simple aspect ratio handling
+                    const imgProps = doc.getImageProperties(notes.canvas);
+                    const pdfWidth = maxLineWidth;
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                    doc.text("Sketch:", margin, y);
+                    y += 5;
+                    doc.addImage(notes.canvas, 'PNG', margin, y, pdfWidth, pdfHeight);
+                } catch (e) {
+                    console.error("Failed to add image", e);
+                }
+            }
+
+            doc.save(`${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
+        }
+        setExportMenuOpen(false);
+    };
 
     // Sync saved status
     useEffect(() => {
@@ -530,6 +633,31 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
                     <div className="px-4 py-2 border-b border-zinc-900 flex items-center justify-between bg-zinc-950/50">
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-zinc-300 text-xs uppercase tracking-wider">Notebook</span>
+                        </div>
+                        <div className="flex items-center gap-1 relative">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-zinc-400 hover:text-white"
+                                onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                                title="Export Notes"
+                            >
+                                <Share2 className="h-3 w-3" />
+                            </Button>
+
+                            {exportMenuOpen && (
+                                <div className="absolute top-8 right-0 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 z-50">
+                                    <button onClick={() => handleExport('md')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
+                                        <Copy className="h-3 w-3" /> Copy Markdown
+                                    </button>
+                                    <button onClick={() => handleExport('pdf')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
+                                        <Download className="h-3 w-3" /> Download PDF
+                                    </button>
+                                    <button onClick={() => handleExport('txt')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
+                                        <FileText className="h-3 w-3" /> Download TXT
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
