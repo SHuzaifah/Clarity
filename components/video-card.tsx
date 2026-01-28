@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Play } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { memo } from "react"
+import { memo, useMemo } from "react"
 
 interface VideoCardProps {
     id: string
@@ -12,6 +12,7 @@ interface VideoCardProps {
     channelTitle: string
     channelThumbnail?: string
     publishedAt: string
+    duration?: string
 }
 
 export const VideoCard = memo(function VideoCard({
@@ -20,8 +21,29 @@ export const VideoCard = memo(function VideoCard({
     thumbnail,
     channelTitle,
     channelThumbnail,
-    publishedAt
+    publishedAt,
+    duration
 }: VideoCardProps) {
+    // Basic ISO 8601 duration parser (PT#H#M#S) to H:MM:SS or MM:SS
+    const formattedDuration = useMemo(() => {
+        if (!duration) return null;
+        const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+        if (!match) return null;
+
+        const hours = (match[1] || '').replace('H', '');
+        const minutes = (match[2] || '').replace('M', '');
+        const seconds = (match[3] || '').replace('S', '');
+
+        const h = hours ? parseInt(hours) : 0;
+        const m = minutes ? parseInt(minutes) : 0;
+        const s = seconds ? parseInt(seconds) : 0;
+
+        if (h > 0) {
+            return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }, [duration]);
+
     return (
         <div className="group flex flex-col gap-2">
             <div className="aspect-video w-full overflow-hidden rounded-xl bg-muted relative">
@@ -33,10 +55,12 @@ export const VideoCard = memo(function VideoCard({
                 />
                 <Link href={`/watch/${id}`} className="absolute inset-0 z-10" />
 
-                {/* Duration Badge - using mock duration if not provided since it's not in props yet */}
-                <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm opacity-100 z-20">
-                    12:34
-                </div>
+                {/* Duration Badge */}
+                {formattedDuration && (
+                    <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm opacity-100 z-20 pointer-events-none">
+                        {formattedDuration}
+                    </div>
+                )}
             </div>
             <div className="flex gap-3 items-start">
                 {channelThumbnail ? (
