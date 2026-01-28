@@ -5,6 +5,7 @@ import { FileText, Edit, Calendar } from "lucide-react";
 import { redirect } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
+import { NoteCard } from "@/components/note-card";
 
 export default async function NotesPage() {
     const supabase = await createClient();

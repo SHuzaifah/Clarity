@@ -20,37 +20,29 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
 
     const getCtx = () => canvasRef.current?.getContext('2d');
 
-    // Load initial data
-    useEffect(() => {
-        if (initialData && canvasRef.current) {
-            const img = new Image();
-            img.onload = () => {
-                const ctx = getCtx();
-                if (ctx && canvasRef.current) {
-                    const dpr = window.devicePixelRatio || 1;
-                    const logicalWidth = canvasRef.current.width / dpr;
-                    const logicalHeight = canvasRef.current.height / dpr;
-                    ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight);
-                }
-            };
-            img.src = initialData;
-        }
-    }, []);
+    const [initialized, setInitialized] = useState(false);
 
-    // Handle Resize & HiDPI
+    // Handle Resize & HiDPI first
     useEffect(() => {
         const updateSize = () => {
             if (containerRef.current && canvasRef.current) {
                 const dpr = window.devicePixelRatio || 1;
                 const { width, height } = containerRef.current.getBoundingClientRect();
 
-                // Save content
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = canvasRef.current.width;
-                tempCanvas.height = canvasRef.current.height;
-                const tempCtx = tempCanvas.getContext('2d');
-                if (tempCtx) {
-                    tempCtx.drawImage(canvasRef.current, 0, 0);
+                // If dimensions haven't changed siginificantly, skip to avoid reset
+                if (canvasRef.current.width === width * dpr && canvasRef.current.height === height * dpr) {
+                    if (!initialized) setInitialized(true);
+                    return;
+                }
+
+                // Save content if initialized (to prevent clearing on resize)
+                let tempCanvas: HTMLCanvasElement | null = null;
+                if (initialized) {
+                    tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvasRef.current.width;
+                    tempCanvas.height = canvasRef.current.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    if (tempCtx) tempCtx.drawImage(canvasRef.current, 0, 0);
                 }
 
                 // Resize canvas to HiDPI
@@ -68,20 +60,68 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
 
-                    ctx.save();
-                    ctx.scale(1 / dpr, 1 / dpr); // Reset scale for image drawing
-                    if (tempCanvas.width > 0) {
+                    // Restore content
+                    if (tempCanvas) {
+                        ctx.save();
+                        ctx.scale(1 / dpr, 1 / dpr);
                         ctx.drawImage(tempCanvas, 0, 0);
+                        ctx.restore();
                     }
-                    ctx.restore();
                 }
+
+                if (!initialized) setInitialized(true);
             }
         };
 
         window.addEventListener('resize', updateSize);
-        setTimeout(updateSize, 0);
+        // Run immediately
+        updateSize();
+
         return () => window.removeEventListener('resize', updateSize);
-    }, []);
+    }, [initialized]);
+
+    // Load initial data ONLY after initialization
+    useEffect(() => {
+        if (initialized && initialData && canvasRef.current) {
+            // Check if we already have content?
+            // If history is empty and we haven't drawn yet, load it.
+            // But checking history might be tricky if we want to support 'resume'.
+            // Simple check: clear canvas and draw image.
+
+            const img = new Image();
+            img.onload = () => {
+                const ctx = getCtx();
+                if (ctx && canvasRef.current) {
+                    const dpr = window.devicePixelRatio || 1;
+
+                    // Clear first to be safe
+                    ctx.save();
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    ctx.restore();
+
+                    // Calculate scale to fit OR draw 1:1 if it matches
+                    // If the image is from toDataURL, it is physical pixels.
+                    // If we draw it into logic coords (0,0, logicalWidth, logicalHeight), it will be upscaled by DPR (ctx.scale).
+                    // So we must Draw it at (0, 0, img.width / dpr, img.height / dpr) to match 1:1?
+                    // OR, simply: ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight); 
+                    // IF image size == logicalWidth * dpr.
+
+                    // Let's assume the image was saved from this device or similar.
+                    // We want to fit it to the canvas or show it 1:1.
+
+                    const logicalWidth = canvasRef.current.width / dpr;
+                    const logicalHeight = canvasRef.current.height / dpr;
+
+                    ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight);
+
+                    // Save this as the first history state
+                    saveHistory();
+                }
+            };
+            img.src = initialData;
+        }
+    }, [initialized, initialData]);
 
     const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
