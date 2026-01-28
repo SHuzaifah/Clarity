@@ -90,6 +90,7 @@ export function LibraryClient({ channels }: LibraryClientProps) {
                                 <img
                                     src={channel.thumbnailUrl}
                                     alt={channel.name}
+                                    loading="lazy"
                                     className="h-14 w-14 shrink-0 rounded-lg object-cover shadow-sm transition-transform group-hover:scale-105"
                                 />
                             ) : (

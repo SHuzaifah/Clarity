@@ -93,20 +93,21 @@ export async function getPersonalizedRecommendations(userId: string): Promise<Vi
 
     if (hasHistory) {
         // Prioritize top channels but include some variety
-        const topChannels = channelScores.slice(0, 8).map(c => c.channel);
-        const otherChannels = channelScores.slice(8).map(c => c.channel);
+        // Reduced from 8 to 5 for faster initial load
+        const topChannels = channelScores.slice(0, 5).map(c => c.channel);
+        const otherChannels = channelScores.slice(5).map(c => c.channel);
 
         // 70% from preferred channels, 30% for discovery
         const numPreferred = Math.ceil(topChannels.length * 0.7);
-        const numDiscovery = Math.floor(otherChannels.length * 0.3);
+        const numDiscovery = Math.min(2, Math.floor(otherChannels.length * 0.3));
 
         channelsToFetch = [
             ...topChannels.slice(0, numPreferred),
             ...otherChannels.slice(0, numDiscovery)
         ];
     } else {
-        // New user - show diverse content
-        channelsToFetch = CHANNELS;
+        // New user - show diverse content but limit to 6 channels
+        channelsToFetch = CHANNELS.slice(0, 6);
     }
 
     // Fetch videos from selected channels
@@ -130,7 +131,7 @@ export async function getPersonalizedRecommendations(userId: string): Promise<Vi
         return { video, score: totalScore };
     });
 
-    // Sort by score and return top 50
+    // Sort by score and return top 20 (reduced from 50)
     return scoredVideos
         .sort((a, b) => {
             const scoreDiff = b.score - a.score;
@@ -138,6 +139,6 @@ export async function getPersonalizedRecommendations(userId: string): Promise<Vi
             // Use video ID as tiebreaker for deterministic sorting
             return a.video.id.localeCompare(b.video.id);
         })
-        .slice(0, 50)
+        .slice(0, 20)
         .map(item => item.video);
 }

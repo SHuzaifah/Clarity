@@ -2,15 +2,14 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, memo } from "react"
 import { Search, Menu } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { ModeToggle } from "@/components/mode-toggle"
-import { SignOutButton } from "@/components/auth/sign-out-button"
 import { Button } from "@/components/ui/button"
 import { useAppShell } from "./app-shell"
 
-export function Header() {
+export const Header = memo(function Header() {
     const { toggleSidebar } = useAppShell()
     const router = useRouter()
     const [query, setQuery] = useState("")
@@ -50,7 +49,6 @@ export function Header() {
                                     className="absolute right-3 text-muted-foreground hover:text-foreground"
                                 >
                                     <span className="sr-only">Clear</span>
-                                    {/* Small X icon */}
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                                 </button>
                             )}
@@ -78,4 +76,4 @@ export function Header() {
             </div>
         </header>
     )
-}
+})

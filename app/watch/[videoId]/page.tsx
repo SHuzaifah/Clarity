@@ -1,16 +1,16 @@
 
-import { FocusPlayer } from "@/components/focus-player";
+import { FocusPlayerWrapper } from "@/components/focus-player-wrapper";
 import { getVideoDetails } from "@/lib/youtube";
 
 export default async function WatchPage({ params }: { params: Promise<{ videoId: string }> }) {
     const { videoId } = await params;
 
     const video = await getVideoDetails(videoId);
-    const title = video?.title || "Focus Session"; // Fallback if API fails
+    const title = video?.title || "Focus Session";
     const thumbnailUrl = video?.thumbnailUrl || "";
 
     return (
-        <FocusPlayer
+        <FocusPlayerWrapper
             videoId={videoId}
             title={title}
             thumbnailUrl={thumbnailUrl}

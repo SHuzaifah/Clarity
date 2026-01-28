@@ -2,7 +2,7 @@
 
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState, memo } from "react"
 
 interface AppShellContextType {
     isCollapsed: boolean

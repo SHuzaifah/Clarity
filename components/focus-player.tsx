@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { X, CheckCircle, FileText, Play, Pause, Sparkles, ChevronRight, Volume2, VolumeX, Maximize, SkipForward, Rewind, PenTool } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -300,7 +300,7 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
 
     if (!hasMounted) return <div className="fixed inset-0 bg-black" />;
 
-    const opts: YouTubeProps['opts'] = {
+    const opts: YouTubeProps['opts'] = useMemo(() => ({
         height: '100%',
         width: '100%',
         playerVars: {
@@ -312,11 +312,11 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
             disablekb: 1,
             fs: 0
         },
-    };
+    }), []);
 
     const sidebarWidth = 400;
 
-    const addToNotes = (targetType: 'jot' | 'summary') => {
+    const addToNotes = useCallback((targetType: 'jot' | 'summary') => {
         if (!tutorResponse) return;
         const textToAdd = tutorResponse;
 
@@ -329,7 +329,7 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
 
         setNoteType(targetType);
         setTutorResponse(null);
-    };
+    }, [tutorResponse]);
 
     return (
         <div

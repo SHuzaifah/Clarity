@@ -3,10 +3,10 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-// Use Lucide icons directly if available or custom component
-import { Home, Library, Settings, History, PlaySquare, Clock, User, ChevronLeft, ChevronRight, FileText, Bookmark } from "lucide-react"
+import { Home, Library, Settings, History, FileText, User, ChevronLeft, ChevronRight, Bookmark } from "lucide-react"
 import { useAppShell } from "./app-shell"
 import { Button } from "@/components/ui/button"
+import { memo } from "react"
 
 const sidebarItems = [
     {
@@ -46,7 +46,7 @@ const sidebarItems = [
     },
 ]
 
-export function Sidebar() {
+export const Sidebar = memo(function Sidebar() {
     const pathname = usePathname()
     const { isCollapsed, toggleSidebar } = useAppShell()
 
@@ -114,4 +114,4 @@ export function Sidebar() {
             </div>
         </aside>
     )
-}
+})
