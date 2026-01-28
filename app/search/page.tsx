@@ -144,9 +144,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                                     <img
                                                         src={video.thumbnail || ""}
                                                         alt={video.title}
-                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                                                     />
                                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+
+                                                    {/* Duration Badge */}
+                                                    {video.duration && (
+                                                        <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm">
+                                                            {/* Simple parser or raw display if ISO not handled yet */}
+                                                            {video.duration.replace("PT", "").replace("H", ":").replace("M", ":").replace("S", "")}
+                                                        </div>
+                                                    )}
 
                                                     {/* Badges Overlay - Subtle */}
                                                     <div className="absolute top-2 left-2 flex flex-wrap gap-1.5 opacity-90">
@@ -179,7 +187,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                                         </div>
                                                     )}
                                                     <div className="flex flex-col gap-1 flex-1 min-w-0">
-                                                        <h3 className="font-medium leading-snug text-foreground line-clamp-2 text-sm group-hover:text-primary/90 transition-colors">
+                                                        <h3 className="font-semibold leading-snug line-clamp-2 text-sm sm:text-base group-hover:text-primary dark:group-hover:text-white transition-colors">
                                                             <Link href={`/watch/${video.id}`}>
                                                                 {video.title}
                                                             </Link>

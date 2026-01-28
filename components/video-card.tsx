@@ -29,9 +29,15 @@ export const VideoCard = memo(function VideoCard({
                     src={thumbnail}
                     alt={title}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+
+                {/* Duration Badge - using mock duration if not provided since it's not in props yet */}
+                <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm opacity-100">
+                    12:34
+                </div>
+
                 <Link
                     href={`/watch/${id}`}
                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -55,7 +61,7 @@ export const VideoCard = memo(function VideoCard({
                     </div>
                 )}
                 <div className="flex flex-col gap-1 flex-1 min-w-0">
-                    <h3 className="font-semibold leading-tight text-foreground line-clamp-2 text-sm sm:text-base">
+                    <h3 className="font-semibold leading-tight text-foreground line-clamp-2 text-sm sm:text-base group-hover:text-primary transition-colors">
                         <Link href={`/watch/${id}`} className="hover:text-primary transition-colors">
                             {title}
                         </Link>

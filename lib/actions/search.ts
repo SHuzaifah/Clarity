@@ -41,7 +41,8 @@ export async function searchVideos(query: string) {
         channelTitle: v.channel_title,
         channelThumbnail: v.channel_thumbnail_url,
         publishedAt: v.published_at,
-        channelId: v.channel_id
+        channelId: v.channel_id,
+        duration: v.duration // Pass duration if available
     }));
 }
 
