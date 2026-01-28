@@ -2,17 +2,33 @@
 
 import { createClient } from "@/lib/supabase/server";
 
+import { expandSearchQuery } from "@/lib/gemini";
+
 export async function searchVideos(query: string) {
     if (!query || query.trim().length < 2) return [];
 
     const supabase = await createClient();
 
-    // Search in video titles and descriptions
-    // Using ilike for case-insensitive search
+    // 1. Semantic Expansion via Gemini
+    // We try to understand the "intent" and get relevant keywords
+    const expandedTerms = await expandSearchQuery(query);
+
+    // Ensure original query is included and prioritized (if valid)
+    const terms = Array.from(new Set([query, ...expandedTerms])).slice(0, 5); // Limit to top 5 terms
+
+    // 2. Construct Supabase Query
+    // We search across title, description, and channel_title for ANY of the terms
+    // content matching concepts or synonyms.
+    const searchConditions = terms.map(term => {
+        // Sanitize term for PostgREST
+        const safeTerm = term.replace(/[,()]/g, '');
+        return `title.ilike.%${safeTerm}%,description.ilike.%${safeTerm}%,channel_title.ilike.%${safeTerm}%`;
+    }).join(',');
+
     const { data: videos } = await supabase
         .from('videos')
         .select('*')
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%,channel_title.ilike.%${query}%`)
+        .or(searchConditions)
         .order('published_at', { ascending: false })
         .limit(50);
 

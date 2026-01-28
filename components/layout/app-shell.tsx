@@ -2,7 +2,7 @@
 
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { createContext, useContext, useState, memo } from "react"
+import { createContext, useContext, useState, useEffect, memo } from "react"
 
 interface AppShellContextType {
     isCollapsed: boolean
@@ -26,7 +26,19 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
 
-    const toggleSidebar = () => setIsCollapsed(!isCollapsed)
+    // Persist sidebar state
+    useEffect(() => {
+        const stored = localStorage.getItem("sidebar-collapsed")
+        if (stored) {
+            setIsCollapsed(stored === "true")
+        }
+    }, [])
+
+    const toggleSidebar = () => {
+        const newState = !isCollapsed
+        setIsCollapsed(newState)
+        localStorage.setItem("sidebar-collapsed", String(newState))
+    }
 
     return (
         <AppShellContext.Provider value={{ isCollapsed, toggleSidebar }}>
