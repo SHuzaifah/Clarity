@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         const responseVideos = videos.map(v => ({
             channelId: v.channelId,
             channelTitle: v.channelTitle,
+            channelThumbnail: v.channelThumbnail,
             videoId: v.id,
             videoTitle: v.title,
             thumbnailUrl: v.thumbnail,
@@ -44,11 +45,11 @@ export async function GET(request: NextRequest) {
         }));
 
         // Derive channel info from the first video
-        // Note: fetchChannelVideos ensures videos belong to the requested channel
         const firstVideo = videos[0];
         const channelInfo = {
             id: firstVideo.channelId,
             title: firstVideo.channelTitle,
+            thumbnailUrl: firstVideo.channelThumbnail,
             url: `https://www.youtube.com/channel/${firstVideo.channelId}`
         };
 

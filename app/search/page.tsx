@@ -4,6 +4,7 @@ import { searchVideos } from "@/lib/actions/search";
 import Link from "next/link";
 import { ExternalLink, BookOpen, Code, Briefcase, Brain, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/server";
 
 interface SearchPageProps {
     searchParams: Promise<{ q: string }>;
@@ -30,7 +31,40 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
     const matchedVideos = query.trim().length >= 2 ? await searchVideos(query) : [];
 
-    const hasResults = matchedChannels.length > 0 || matchedVideos.length > 0;
+    // Fetch channel thumbnails from database
+    const supabase = await createClient();
+    const { data: videos } = await supabase
+        .from('videos')
+        .select('channel_id, channel_title, channel_thumbnail_url')
+        .not('channel_thumbnail_url', 'is', null)
+        .limit(1000);
+
+    // Create a map of channel thumbnails
+    const channelThumbnails = new Map<string, string>();
+    videos?.forEach(v => {
+        if (v.channel_thumbnail_url && !channelThumbnails.has(v.channel_id)) {
+            channelThumbnails.set(v.channel_id, v.channel_thumbnail_url);
+        }
+    });
+
+    // Enrich matched channels with thumbnails
+    const enrichedChannels = matchedChannels.map(channel => {
+        let thumbnail = channel.id ? channelThumbnails.get(channel.id) : undefined;
+
+        if (!thumbnail && videos) {
+            const matchingVideo = videos.find(v =>
+                v.channel_title?.toLowerCase() === channel.name.toLowerCase()
+            );
+            thumbnail = matchingVideo?.channel_thumbnail_url;
+        }
+
+        return {
+            ...channel,
+            thumbnailUrl: thumbnail
+        };
+    });
+
+    const hasResults = enrichedChannels.length > 0 || matchedVideos.length > 0;
 
     return (
         <AppShell>
@@ -70,9 +104,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                                 </Link>
                                             </div>
                                             <div className="flex gap-3 items-start">
-                                                <div className="h-9 w-9 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center text-xs font-bold text-primary">
-                                                    {video.channelTitle ? video.channelTitle.charAt(0) : "Y"}
-                                                </div>
+                                                {video.channelThumbnail ? (
+                                                    <img
+                                                        src={video.channelThumbnail}
+                                                        alt={video.channelTitle}
+                                                        loading="lazy"
+                                                        className="h-9 w-9 rounded-full object-cover flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="h-9 w-9 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center text-xs font-bold text-primary">
+                                                        {video.channelTitle ? video.channelTitle.charAt(0) : "Y"}
+                                                    </div>
+                                                )}
                                                 <div className="flex flex-col gap-1 flex-1">
                                                     <h3 className="font-semibold leading-tight text-foreground line-clamp-2 text-sm sm:text-base">
                                                         <Link href={`/watch/${video.id}`} className="hover:text-primary transition-colors">
@@ -93,11 +136,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         )}
 
                         {/* Channel Results */}
-                        {matchedChannels.length > 0 && (
+                        {enrichedChannels.length > 0 && (
                             <section className="space-y-4">
-                                <h2 className="text-xl font-semibold">Channels ({matchedChannels.length})</h2>
+                                <h2 className="text-xl font-semibold">Channels ({enrichedChannels.length})</h2>
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                    {matchedChannels.map(channel => {
+                                    {enrichedChannels.map(channel => {
                                         const Icon = getCategoryIcon(channel.category);
                                         return (
                                             <Link
@@ -105,12 +148,21 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                                 href={`/channel/${channel.handle ? `%40${channel.handle}` : channel.id}`}
                                                 className="group flex flex-row items-center gap-4 p-4 rounded-xl border bg-card hover:bg-accent/40 hover:border-primary/20 transition-all"
                                             >
-                                                <div className={cn(
-                                                    "h-12 w-12 shrink-0 rounded-lg flex items-center justify-center text-white shadow-sm bg-primary/80",
-                                                    "bg-gradient-to-br from-zinc-700 to-zinc-900"
-                                                )}>
-                                                    <Icon className="h-6 w-6 text-white" />
-                                                </div>
+                                                {channel.thumbnailUrl ? (
+                                                    <img
+                                                        src={channel.thumbnailUrl}
+                                                        alt={channel.name}
+                                                        loading="lazy"
+                                                        className="h-12 w-12 shrink-0 rounded-lg object-cover shadow-sm transition-transform group-hover:scale-105"
+                                                    />
+                                                ) : (
+                                                    <div className={cn(
+                                                        "h-12 w-12 shrink-0 rounded-lg flex items-center justify-center text-white shadow-sm transition-transform group-hover:scale-105",
+                                                        "bg-gradient-to-br from-zinc-700 to-zinc-900"
+                                                    )}>
+                                                        <Icon className="h-6 w-6 text-white" />
+                                                    </div>
+                                                )}
                                                 <div className="flex-1 min-w-0">
                                                     <h3 className="font-semibold truncate">{channel.name}</h3>
                                                     <p className="text-xs text-muted-foreground line-clamp-1">{channel.category.split(" · ")[0]}</p>

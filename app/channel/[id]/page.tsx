@@ -23,20 +23,13 @@ export default function ChannelPage({ params }: ChannelPageProps) {
 
     const [videos, setVideos] = useState<YouTubeVideo[]>([]);
     const [loading, setLoading] = useState(true);
-    const [channelInfo, setChannelInfo] = useState<{ title: string; url: string } | null>(null);
+    const [channelInfo, setChannelInfo] = useState<{ title: string; url: string; thumbnailUrl?: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         async function loadVideos() {
             setLoading(true);
             try {
-                // We use our client helper which calls the backend API
-                // Currently getChannelVideos returns just videos array, but we need channel info too?
-                // The API actually returns { channel, videos }.
-                // Let's update client helper or call API directly?
-                // The requirements said: "Frontend video grid example".
-                // I'll call the API route directly to get full data for better UX (Channel Title)
-
                 const searchParams = new URLSearchParams();
                 if (channelId) searchParams.append("channelId", channelId);
                 if (handle) searchParams.append("handle", handle);
@@ -69,9 +62,17 @@ export default function ChannelPage({ params }: ChannelPageProps) {
             <div className="space-y-6">
                 {/* Channel Header */}
                 <div className="flex items-center gap-4 border-b pb-6">
-                    <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary">
-                        {channelInfo?.title ? channelInfo.title.charAt(0) : (decodedId.charAt(0).toUpperCase())}
-                    </div>
+                    {channelInfo?.thumbnailUrl ? (
+                        <img
+                            src={channelInfo.thumbnailUrl}
+                            alt={channelInfo.title}
+                            className="h-20 w-20 rounded-full object-cover shadow-md"
+                        />
+                    ) : (
+                        <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary">
+                            {channelInfo?.title ? channelInfo.title.charAt(0) : (decodedId.charAt(0).toUpperCase())}
+                        </div>
+                    )}
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
                             {loading ? "Loading..." : (channelInfo?.title || decodedId)}
