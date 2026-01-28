@@ -146,32 +146,26 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                                         alt={video.title}
                                                         className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                                                     />
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/0 transition-colors" /> {/* Removed dark overlay effectively */}
+                                                    <Link href={`/watch/${video.id}`} className="absolute inset-0 z-10" />
 
                                                     {/* Duration Badge */}
                                                     {video.duration && (
-                                                        <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm">
-                                                            {/* Simple parser or raw display if ISO not handled yet */}
+                                                        <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm z-20 pointer-events-none">
                                                             {video.duration.replace("PT", "").replace("H", ":").replace("M", ":").replace("S", "")}
                                                         </div>
                                                     )}
 
-                                                    {/* Badges Overlay - Subtle */}
-                                                    <div className="absolute top-2 left-2 flex flex-wrap gap-1.5 opacity-90">
+                                                    {/* Badges Overlay */}
+                                                    <div className="absolute top-2 left-2 flex flex-wrap gap-1.5 opacity-90 z-20 pointer-events-none">
                                                         {badges.map(b => (
                                                             <span key={b.set} className={cn("px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-semibold backdrop-blur-md bg-background/80",
-                                                                "text-foreground/80 border border-white/10 shadow-sm" // Unified subtle style per user request "No colors that compete"
+                                                                "text-foreground/80 border border-white/10 shadow-sm"
                                                             )}>
                                                                 {b.set}
                                                             </span>
                                                         ))}
                                                     </div>
-
-                                                    <Link href={`/watch/${video.id}`} className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                        <div className="bg-background/80 backdrop-blur-sm p-3 rounded-full shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
-                                                            <Play className="h-6 w-6 fill-foreground pl-0.5 text-foreground" />
-                                                        </div>
-                                                    </Link>
                                                 </div>
                                                 <div className="flex gap-3 items-start">
                                                     {video.channelThumbnail ? (

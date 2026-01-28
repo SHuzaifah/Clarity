@@ -31,21 +31,12 @@ export const VideoCard = memo(function VideoCard({
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                <Link href={`/watch/${id}`} className="absolute inset-0 z-10" />
 
                 {/* Duration Badge - using mock duration if not provided since it's not in props yet */}
-                <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm opacity-100">
+                <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm opacity-100 z-20">
                     12:34
                 </div>
-
-                <Link
-                    href={`/watch/${id}`}
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                    <div className="bg-background/90 p-3 rounded-full shadow-lg">
-                        <Play className="h-5 w-5 fill-foreground text-foreground" />
-                    </div>
-                </Link>
             </div>
             <div className="flex gap-3 items-start">
                 {channelThumbnail ? (
