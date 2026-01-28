@@ -298,8 +298,6 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
         }
     };
 
-    if (!hasMounted) return <div className="fixed inset-0 bg-black" />;
-
     const opts: YouTubeProps['opts'] = useMemo(() => ({
         height: '100%',
         width: '100%',
@@ -313,8 +311,6 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
             fs: 0
         },
     }), []);
-
-    const sidebarWidth = 400;
 
     const addToNotes = useCallback((targetType: 'jot' | 'summary') => {
         if (!tutorResponse) return;
@@ -330,6 +326,10 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
         setNoteType(targetType);
         setTutorResponse(null);
     }, [tutorResponse]);
+
+    const sidebarWidth = 400;
+
+    if (!hasMounted) return <div className="fixed inset-0 bg-black" />;
 
     return (
         <div
