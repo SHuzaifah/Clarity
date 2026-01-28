@@ -106,35 +106,6 @@ export const fetchChannelVideos = async (channelIdentifier: string): Promise<Vid
                 } while (pageToken && pagesFetched < maxPages);
 
                 if (newVideos.length > 0) {
-                    // 2.1 Fetch contentDetails for duration
-                    const videoIds = newVideos.map(v => v.id).join(',');
-                    // YouTube API 'videos' endpoint allows up to 50 IDs. 
-                    // Our pages are 50 items max, so this works perfectly.
-
-                    try {
-                        const vRes = await fetch(
-                            `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${apiKey}`,
-                            { next: { revalidate: 3600 } }
-                        );
-                        const vData = await vRes.json();
-
-                        if (vData.items) {
-                            // Create a map of ID -> Duration
-                            const durationMap: Record<string, string> = {};
-                            vData.items.forEach((item: any) => {
-                                durationMap[item.id] = item.contentDetails.duration;
-                            });
-
-                            // Merge duration into newVideos
-                            newVideos = newVideos.map(v => ({
-                                ...v,
-                                duration: durationMap[v.id] || null
-                            }));
-                        }
-                    } catch (detailsErr) {
-                        console.error("Failed to fetch video details", detailsErr);
-                    }
-
                     await supabase.from('videos').upsert(newVideos, { onConflict: 'id' });
                 }
             }
