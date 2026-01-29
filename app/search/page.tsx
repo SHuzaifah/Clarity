@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ExternalLink, BookOpen, Code, Briefcase, Brain, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
+import { VideoCard } from "@/components/video-card";
 
 interface SearchPageProps {
     searchParams: Promise<{ q: string }>;
@@ -127,81 +128,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             <section className="space-y-6">
                                 <h2 className="text-lg font-medium tracking-tight text-foreground/90">Videos</h2>
                                 <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                    {matchedVideos.map((video) => {
-                                        // Generate Badges
-                                        const badges = [];
-                                        const isNew = (new Date().getTime() - new Date(video.publishedAt).getTime()) < (30 * 24 * 60 * 60 * 1000);
-                                        if (isNew) badges.push({ set: "New", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" });
-
-                                        const titleLower = video.title.toLowerCase();
-                                        if (titleLower.match(/part \d+|ep(isode)?\.? \d+|#\d+/)) badges.push({ set: "Series", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" });
-                                        if (titleLower.match(/intro|beginner|basics|101/)) badges.push({ set: "Beginner", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" });
-                                        if (titleLower.match(/advanced|deep dive|masterclass/)) badges.push({ set: "Advanced", color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" });
-
-                                        return (
-                                            <div key={video.id} className="group flex flex-col gap-3">
-                                                <div className="aspect-video w-full overflow-hidden rounded-xl bg-muted relative shadow-sm transition-all duration-300 group-hover:shadow-md">
-                                                    <img
-                                                        src={video.thumbnail || ""}
-                                                        alt={video.title}
-                                                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-
-                                                    {/* Duration Badge */}
-                                                    {video.duration && (
-                                                        <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm">
-                                                            {/* Simple parser or raw display if ISO not handled yet */}
-                                                            {video.duration.replace("PT", "").replace("H", ":").replace("M", ":").replace("S", "")}
-                                                        </div>
-                                                    )}
-
-                                                    {/* Badges Overlay - Subtle */}
-                                                    <div className="absolute top-2 left-2 flex flex-wrap gap-1.5 opacity-90">
-                                                        {badges.map(b => (
-                                                            <span key={b.set} className={cn("px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-semibold backdrop-blur-md bg-background/80",
-                                                                "text-foreground/80 border border-white/10 shadow-sm" // Unified subtle style per user request "No colors that compete"
-                                                            )}>
-                                                                {b.set}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-
-                                                    <Link href={`/watch/${video.id}`} className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                        <div className="bg-background/80 backdrop-blur-sm p-3 rounded-full shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
-                                                            <Play className="h-6 w-6 fill-foreground pl-0.5 text-foreground" />
-                                                        </div>
-                                                    </Link>
-                                                </div>
-                                                <div className="flex gap-3 items-start">
-                                                    {video.channelThumbnail ? (
-                                                        <img
-                                                            src={video.channelThumbnail}
-                                                            alt={video.channelTitle}
-                                                            loading="lazy"
-                                                            className="h-9 w-9 rounded-full object-cover flex-shrink-0 border border-border/50"
-                                                        />
-                                                    ) : (
-                                                        <div className="h-9 w-9 rounded-full bg-primary/5 flex-shrink-0 flex items-center justify-center text-xs font-bold text-primary border border-border/50">
-                                                            {video.channelTitle ? video.channelTitle.charAt(0) : "Y"}
-                                                        </div>
-                                                    )}
-                                                    <div className="flex flex-col gap-1 flex-1 min-w-0">
-                                                        <h3 className="font-semibold leading-snug line-clamp-2 text-sm sm:text-base group-hover:text-primary dark:group-hover:text-white transition-colors">
-                                                            <Link href={`/watch/${video.id}`}>
-                                                                {video.title}
-                                                            </Link>
-                                                        </h3>
-                                                        <div className="text-xs text-muted-foreground/70 flex items-center gap-1.5 font-medium">
-                                                            <span className="truncate max-w-[120px]">{video.channelTitle}</span>
-                                                            <span className="text-[10px]">•</span>
-                                                            <span>{new Date(video.publishedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                    {matchedVideos.map((video) => (
+                                        <div key={video.id} className="group flex flex-col gap-3">
+                                            <VideoCard
+                                                id={video.id}
+                                                title={video.title}
+                                                thumbnail={video.thumbnail || ""}
+                                                channelTitle={video.channelTitle}
+                                                channelThumbnail={video.channelThumbnail}
+                                                publishedAt={video.publishedAt}
+                                                duration={video.duration}
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                             </section>
                         )}

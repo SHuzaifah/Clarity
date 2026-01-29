@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Play } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { memo } from "react"
+import { formatDuration } from "@/lib/utils"
 
 interface VideoCardProps {
     id: string
@@ -12,6 +13,7 @@ interface VideoCardProps {
     channelTitle: string
     channelThumbnail?: string
     publishedAt: string
+    duration?: string | number
 }
 
 export const VideoCard = memo(function VideoCard({
@@ -20,7 +22,8 @@ export const VideoCard = memo(function VideoCard({
     thumbnail,
     channelTitle,
     channelThumbnail,
-    publishedAt
+    publishedAt,
+    duration
 }: VideoCardProps) {
     return (
         <div className="group flex flex-col gap-2">
@@ -33,10 +36,12 @@ export const VideoCard = memo(function VideoCard({
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
 
-                {/* Duration Badge - using mock duration if not provided since it's not in props yet */}
-                <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm opacity-100">
-                    12:34
-                </div>
+                {/* Duration Badge */}
+                {duration && (
+                    <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm opacity-100">
+                        {formatDuration(duration)}
+                    </div>
+                )}
 
                 <Link
                     href={`/watch/${id}`}

@@ -20,6 +20,9 @@ begin
     if not exists (select 1 from information_schema.columns where table_name = 'videos' and column_name = 'channel_thumbnail_url') then
         alter table videos add column channel_thumbnail_url text;
     end if;
+    if not exists (select 1 from information_schema.columns where table_name = 'videos' and column_name = 'duration') then
+        alter table videos add column duration text;
+    end if;
 end $$;
 
 -- Indexes

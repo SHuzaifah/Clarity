@@ -9,6 +9,7 @@ export interface Video {
     channelThumbnail?: string;
     publishedAt: string;
     channelId: string;
+    duration?: string;
 }
 
 const INITIAL_SYNC_PAGES = 10;
@@ -29,17 +30,12 @@ async function getChannelIdFromHandle(handle: string, apiKey: string): Promise<s
         return null;
     }
 }
-
 export const fetchChannelVideos = async (channelIdentifier: string): Promise<Video[]> => {
     const supabase = await createClient();
     const apiKey = process.env.YOUTUBE_API_KEY;
 
     // 0. Resolve Channel ID
     let channelId = channelIdentifier;
-    // Basic heuristic: IDs start with UC... and are 24 chars usually. Handles usually don't. 
-    // But strict check: passed indentifier is 'handle' if not 'UC...'? 
-    // Or just try?
-    // User CHANNELS list has 'AliAbdaal'.
     if (!channelId.startsWith("UC")) {
         if (!apiKey) return [];
         const resolved = await getChannelIdFromHandle(channelId, apiKey);
@@ -56,7 +52,6 @@ export const fetchChannelVideos = async (channelIdentifier: string): Promise<Vid
         .select('*', { count: 'exact', head: true })
         .eq('channel_id', channelId);
 
-    // If we have 0 videos, do full sync. If we have videos, just check latest page.
     const isInitialSync = count === 0;
     const maxPages = isInitialSync ? INITIAL_SYNC_PAGES : UPDATE_SYNC_PAGES;
 
@@ -105,7 +100,28 @@ export const fetchChannelVideos = async (channelIdentifier: string): Promise<Vid
 
                 } while (pageToken && pagesFetched < maxPages);
 
+                // Batch fetch durations for new videos
                 if (newVideos.length > 0) {
+                    const videoIds = newVideos.map(v => v.id);
+                    // Split into chunks of 50
+                    for (let i = 0; i < videoIds.length; i += 50) {
+                        const chunk = videoIds.slice(i, i + 50);
+                        const videosRes = await fetch(
+                            `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${chunk.join(',')}&key=${apiKey}`,
+                            { next: { revalidate: 3600 } }
+                        );
+                        const videosData = await videosRes.json();
+
+                        if (videosData.items) {
+                            videosData.items.forEach((item: any) => {
+                                const video = newVideos.find(v => v.id === item.id);
+                                if (video) {
+                                    video.duration = item.contentDetails.duration;
+                                }
+                            });
+                        }
+                    }
+
                     await supabase.from('videos').upsert(newVideos, { onConflict: 'id' });
                 }
             }
@@ -130,6 +146,7 @@ export const fetchChannelVideos = async (channelIdentifier: string): Promise<Vid
         channelTitle: v.channel_title,
         channelThumbnail: v.channel_thumbnail_url,
         publishedAt: v.published_at,
-        channelId: v.channel_id
+        channelId: v.channel_id,
+        duration: v.duration
     }));
 };
