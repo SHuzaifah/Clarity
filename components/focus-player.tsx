@@ -455,7 +455,7 @@ ${notes.jot || "No notes."}
                 <div className="flex gap-4 pointer-events-auto">
                     <Button
                         variant="ghost"
-                        className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm gap-2"
+                        className="hidden md:flex bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm gap-2"
                         onClick={toggleSidebar}
                     >
                         <FileText className="h-4 w-4" />
@@ -799,24 +799,22 @@ ${notes.jot || "No notes."}
 
             {/* Mobile Notes Drawer */}
             <div className={cn(
-                "md:hidden fixed inset-x-0 bottom-0 z-50 bg-zinc-950 border-t border-zinc-800 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out flex flex-col h-[70vh]",
-                showMobileNotes ? "translate-y-0" : "translate-y-full"
+                "md:hidden fixed inset-x-0 bottom-0 z-50 bg-zinc-950 border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.8)] transition-transform duration-300 ease-out flex flex-col h-[65vh] rounded-t-[20px]",
+                showMobileNotes ? "translate-y-0" : "translate-y-[110%]"
             )}>
                 {/* Drawer Handle & Header */}
                 <div
-                    className="flex-none flex items-center justify-between p-3 border-b border-zinc-900 bg-zinc-900/50 cursor-grab active:cursor-grabbing touch-none"
+                    className="flex-none flex items-center justify-between px-4 py-3 border-b border-white/5 bg-zinc-900/50 backdrop-blur-xl rounded-t-[20px] cursor-grab active:cursor-grabbing touch-none relative"
                     onClick={() => setShowMobileNotes(false)}
                 >
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400">
-                            <ChevronDown className="h-5 w-5" />
-                        </Button>
-                        <span className="font-semibold text-zinc-200 text-sm">Notebook</span>
+                    {/* Handle Indicator */}
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-zinc-700/50 rounded-full" />
+
+                    <div className="flex items-center gap-3 pt-2">
+                        <span className="font-semibold text-zinc-100 text-sm tracking-wide">Notebook</span>
                     </div>
 
-                    <div className="w-12 h-1 bg-zinc-700 rounded-full absolute left-1/2 -translate-x-1/2 opacity-50" />
-
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 pt-2">
                         <Button
                             variant="ghost"
                             size="sm"
@@ -870,15 +868,18 @@ ${notes.jot || "No notes."}
                 </div>
             </div>
 
-            {/* Mobile Open Notes Trigger (Floating Button when notes closed) */}
+            {/* Mobile Open Notes Trigger (Floating Button) */}
             {!showMobileNotes && !showSidebar && (
-                <div className="md:hidden fixed bottom-6 right-6 z-40">
+                <div className="md:hidden fixed bottom-24 right-4 z-40 transition-opacity duration-300">
                     <Button
-                        size="lg"
-                        className="rounded-full h-14 w-14 shadow-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 flex items-center justify-center transition-transform active:scale-95"
+                        size="icon"
+                        className={cn(
+                            "rounded-full h-12 w-12 shadow-2xl bg-zinc-800/80 backdrop-blur-md border border-white/10 text-white hover:bg-zinc-700 transition-transform active:scale-95",
+                            // Hide if controls are hidden? No, keep it accessible but unobtrusive
+                        )}
                         onClick={() => setShowMobileNotes(true)}
                     >
-                        <FileText className="h-6 w-6" />
+                        <FileText className="h-5 w-5" />
                     </Button>
                 </div>
             )}
