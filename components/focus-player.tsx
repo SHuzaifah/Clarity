@@ -65,6 +65,9 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
     // Export State
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
+    // Mobile Notes State
+    const [showMobileNotes, setShowMobileNotes] = useState(false);
+
     const handleExport = (format: 'md' | 'pdf' | 'txt') => {
         const dateStr = new Date().toLocaleDateString();
 
@@ -469,11 +472,14 @@ ${notes.jot || "No notes."}
                 </div>
             </div>
 
-            <div className="flex-1 flex relative overflow-hidden bg-black">
+            <div className="flex-1 flex relative overflow-hidden bg-black flex-col md:flex-row">
                 {/* Responsive Layout Container */}
                 <div
-                    className={cn("flex-1 relative transition-all duration-300 ease-in-out")}
-                    style={{ marginRight: showSidebar ? `${sidebarWidth}px` : 0 }}
+                    className={cn(
+                        "relative transition-all duration-300 ease-in-out bg-black",
+                        showSidebar ? "md:mr-[400px]" : "md:mr-0",
+                        showMobileNotes ? "h-[30vh] flex-none z-50 sticky top-0" : "flex-1 h-full"
+                    )}
                 >
                     {/* Player Wrapper */}
                     <div className="absolute inset-0 flex items-center justify-center bg-black">
@@ -585,7 +591,7 @@ ${notes.jot || "No notes."}
                 {/* Intelligent Notebook Sidebar */}
                 <div
                     className={cn(
-                        "fixed right-0 top-0 bottom-0 bg-zinc-950 border-l border-zinc-900 shadow-2xl transform transition-transform duration-300 flex flex-col z-30",
+                        "hidden md:flex fixed right-0 top-0 bottom-0 bg-zinc-950 border-l border-zinc-900 shadow-2xl transform transition-transform duration-300 flex-col z-30",
                         showSidebar ? "translate-x-0" : "translate-x-full"
                     )}
                     style={{ width: `${sidebarWidth}px` }}
@@ -790,6 +796,92 @@ ${notes.jot || "No notes."}
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Notes Drawer */}
+            <div className={cn(
+                "md:hidden fixed inset-x-0 bottom-0 z-50 bg-zinc-950 border-t border-zinc-800 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out flex flex-col h-[70vh]",
+                showMobileNotes ? "translate-y-0" : "translate-y-full"
+            )}>
+                {/* Drawer Handle & Header */}
+                <div
+                    className="flex-none flex items-center justify-between p-3 border-b border-zinc-900 bg-zinc-900/50 cursor-grab active:cursor-grabbing touch-none"
+                    onClick={() => setShowMobileNotes(false)}
+                >
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400">
+                            <ChevronDown className="h-5 w-5" />
+                        </Button>
+                        <span className="font-semibold text-zinc-200 text-sm">Notebook</span>
+                    </div>
+
+                    <div className="w-12 h-1 bg-zinc-700 rounded-full absolute left-1/2 -translate-x-1/2 opacity-50" />
+
+                    <div className="flex gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
+                            onClick={(e) => { e.stopPropagation(); setExportMenuOpen(!exportMenuOpen); }}
+                        >
+                            <Share2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Mode Switcher */}
+                <div className="flex items-center justify-center p-2 border-b border-zinc-900 gap-2 bg-zinc-950">
+                    <div className="flex gap-1 bg-zinc-900 rounded-lg p-0.5 border border-zinc-800 w-full">
+                        {(['jot', 'summary', 'visual'] as NoteType[]).map((type) => (
+                            <button
+                                key={type}
+                                onClick={(e) => { e.stopPropagation(); setNoteType(type); }}
+                                className={cn(
+                                    "flex-1 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-md transition-colors flex items-center justify-center gap-1",
+                                    noteType === type
+                                        ? "bg-zinc-800 text-white shadow-sm"
+                                        : "text-zinc-500 hover:text-zinc-300"
+                                )}
+                            >
+                                {type === 'visual' && <PenTool className="h-3 w-3" />}
+                                {type !== 'visual' && type}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Mobile Editor */}
+                <div className="flex-1 overflow-hidden relative bg-zinc-950">
+                    {noteType === 'visual' ? (
+                        <div className="w-full h-full">
+                            <Scratchpad
+                                initialData={typeof notes.canvas === 'string' ? notes.canvas : undefined}
+                                onSave={handleScratchpadSave}
+                                isDark={true}
+                            />
+                        </div>
+                    ) : (
+                        <textarea
+                            className="w-full h-full bg-zinc-950 p-4 resize-none focus:outline-none text-zinc-300 text-sm leading-relaxed font-mono"
+                            placeholder={noteType === 'jot' ? "Start typing..." : "Write summary..."}
+                            value={notes[noteType as 'jot' | 'summary']}
+                            onChange={(e) => setNotes(prev => ({ ...prev, [noteType]: e.target.value }))}
+                        />
+                    )}
+                </div>
+            </div>
+
+            {/* Mobile Open Notes Trigger (Floating Button when notes closed) */}
+            {!showMobileNotes && !showSidebar && (
+                <div className="md:hidden fixed bottom-6 right-6 z-40">
+                    <Button
+                        size="lg"
+                        className="rounded-full h-14 w-14 shadow-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 flex items-center justify-center transition-transform active:scale-95"
+                        onClick={() => setShowMobileNotes(true)}
+                    >
+                        <FileText className="h-6 w-6" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

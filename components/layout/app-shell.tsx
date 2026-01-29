@@ -2,6 +2,7 @@
 
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { BottomNav } from "@/components/layout/bottom-nav"
 import { createContext, useContext, useState, useEffect, memo } from "react"
 
 interface AppShellContextType {
@@ -44,11 +45,12 @@ export function AppShell({ children }: AppShellProps) {
         <AppShellContext.Provider value={{ isCollapsed, toggleSidebar }}>
             <div className="flex h-screen w-full bg-background overflow-hidden">
                 <Sidebar />
-                <div className="flex flex-col flex-1 overflow-hidden transition-all duration-300 ease-in-out">
+                <div className="flex flex-col flex-1 overflow-hidden transition-all duration-300 ease-in-out relative">
                     <Header />
-                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                    <main className="flex-1 overflow-y-auto w-full pb-20 md:pb-6 p-4 md:p-6 lg:p-8">
                         {children}
                     </main>
+                    <BottomNav />
                 </div>
             </div>
         </AppShellContext.Provider>
