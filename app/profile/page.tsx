@@ -137,6 +137,42 @@ export default function ProfilePage() {
                         </Button>
                     </div>
 
+                    {/* App Settings & Legal */}
+                    <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
+                        <div className="p-4 border-b bg-muted/30">
+                            <h3 className="font-semibold text-sm">App Settings</h3>
+                        </div>
+                        <div className="divide-y">
+                            <button
+                                onClick={() => router.push('/settings')}
+                                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+                            >
+                                <span className="text-sm font-medium">General Settings</span>
+                                <div className="text-muted-foreground">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => router.push('/privacy')}
+                                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+                            >
+                                <span className="text-sm font-medium">Privacy Policy</span>
+                                <div className="text-muted-foreground">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => router.push('/terms')}
+                                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+                            >
+                                <span className="text-sm font-medium">Terms of Service</span>
+                                <div className="text-muted-foreground">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Danger Zone - After action buttons */}
                     <div className="rounded-lg border-2 border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-6">
                         <div className="flex items-start gap-3 mb-4">
