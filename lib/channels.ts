@@ -17,13 +17,7 @@ export interface Channel {
 
 export const CHANNELS: Channel[] = [
     // PRODUCTIVITY
-    {
-        name: "Ali Abdaal",
-        category: "PRODUCTIVITY · FOCUS · SYSTEMS",
-        handle: "AliAbdaal",
-        description: "Evidence-based strategies for productivity and living a happier life.",
-        badge: "Productivity · Lifestyle"
-    },
+
     {
         name: "Thomas Frank",
         category: "PRODUCTIVITY · FOCUS · SYSTEMS",
