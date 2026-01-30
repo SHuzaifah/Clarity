@@ -81,12 +81,12 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
     }, [initialized]);
 
     // Load initial data ONLY after initialization
-    // Load initial data ONLY after initialization along with a ref check
-    const hasLoadedRef = useRef(false);
-
     useEffect(() => {
-        if (initialized && initialData && canvasRef.current && !hasLoadedRef.current) {
-            hasLoadedRef.current = true;
+        if (initialized && initialData && canvasRef.current) {
+            // Check if we already have content?
+            // If history is empty and we haven't drawn yet, load it.
+            // But checking history might be tricky if we want to support 'resume'.
+            // Simple check: clear canvas and draw image.
 
             const img = new Image();
             img.onload = () => {
@@ -99,6 +99,16 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
                     ctx.restore();
+
+                    // Calculate scale to fit OR draw 1:1 if it matches
+                    // If the image is from toDataURL, it is physical pixels.
+                    // If we draw it into logic coords (0,0, logicalWidth, logicalHeight), it will be upscaled by DPR (ctx.scale).
+                    // So we must Draw it at (0, 0, img.width / dpr, img.height / dpr) to match 1:1?
+                    // OR, simply: ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight); 
+                    // IF image size == logicalWidth * dpr.
+
+                    // Let's assume the image was saved from this device or similar.
+                    // We want to fit it to the canvas or show it 1:1.
 
                     const logicalWidth = canvasRef.current.width / dpr;
                     const logicalHeight = canvasRef.current.height / dpr;
