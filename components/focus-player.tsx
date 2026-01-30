@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { X, CheckCircle, FileText, Play, Pause, Sparkles, ChevronRight, Volume2, VolumeX, Maximize, SkipForward, Rewind, PenTool, Download, Copy, Share2 } from "lucide-react";
+import { X, CheckCircle, FileText, Play, Pause, Sparkles, ChevronRight, Volume2, VolumeX, Maximize, SkipForward, Rewind, PenTool, Download, Copy, Share2, GripHorizontal, GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import YouTube, { YouTubeProps, YouTubePlayer } from "react-youtube";
@@ -31,6 +31,12 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
     const router = useRouter();
     const [hasMounted, setHasMounted] = useState(false);
 
+    // Layout State (Split View)
+    // Default 60% video, 40% notes
+    const [splitRatio, setSplitRatio] = useState(0.6);
+    const [isDragging, setIsDragging] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
     // Player State
     const [player, setPlayer] = useState<YouTubePlayer | null>(null);
     const [playing, setPlaying] = useState(false);
@@ -45,7 +51,6 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
     const progressIntervalRef = useRef<NodeJS.Timeout>(null);
 
     // Notebook State
-    const [showSidebar, setShowSidebar] = useState(false);
     const [noteType, setNoteType] = useState<NoteType>('jot');
     const [notes, setNotes] = useState<{ jot: string, summary: string, canvas: string | null }>({
         jot: "", summary: "", canvas: null
@@ -65,8 +70,47 @@ export function FocusPlayer({ videoId, title, thumbnailUrl, description = "", ch
     // Export State
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
-    // Mobile Notes State
-    const [showMobileNotes, setShowMobileNotes] = useState(false);
+    // -- Resizing Logic --
+    const startResizing = useCallback(() => setIsDragging(true), []);
+    const stopResizing = useCallback(() => setIsDragging(false), []);
+
+    const resize = useCallback((e: MouseEvent | TouchEvent) => {
+        if (isDragging && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const isMobile = window.innerWidth < 768; // md breakpoint
+
+            let newRatio;
+            if (isMobile) {
+                // Vertical split
+                const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+                newRatio = (clientY - rect.top) / rect.height;
+            } else {
+                // Horizontal split
+                const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+                newRatio = (clientX - rect.left) / rect.width;
+            }
+
+            // Clamp between 20% and 80%
+            newRatio = Math.max(0.2, Math.min(0.8, newRatio));
+            setSplitRatio(newRatio);
+        }
+    }, [isDragging]);
+
+    useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', resize);
+            window.addEventListener('touchmove', resize);
+            window.addEventListener('mouseup', stopResizing);
+            window.addEventListener('touchend', stopResizing);
+        }
+        return () => {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('touchmove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+            window.removeEventListener('touchend', stopResizing);
+        };
+    }, [isDragging, resize, stopResizing]);
+
 
     const handleExport = (format: 'md' | 'pdf' | 'txt') => {
         const dateStr = new Date().toLocaleDateString();
@@ -83,7 +127,6 @@ ${notes.summary || "No summary."}
 ${notes.jot || "No notes."}
 `;
             navigator.clipboard.writeText(mdContent);
-            // Brief visual feedback could be improved, but this works
             alert("Copied Markdown to clipboard!");
         } else if (format === 'txt') {
             const content = `Title: ${title}
@@ -149,7 +192,6 @@ ${notes.jot || "No notes."}
             if (notes.canvas && typeof notes.canvas === 'string') {
                 if (y > 200) { doc.addPage(); y = 20; }
                 try {
-                    // Simple aspect ratio handling
                     const imgProps = doc.getImageProperties(notes.canvas);
                     const pdfWidth = maxLineWidth;
                     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -195,11 +237,9 @@ ${notes.jot || "No notes."}
 
     useEffect(() => {
         setHasMounted(true);
-        // Fetch existing history/notes
         if (videoId) {
             getWatchHistory(videoId).then(data => {
                 if (data?.notes) {
-                    // Handle migration: if canvas was object, reset to null
                     const loadedNotes = data.notes;
                     if (loadedNotes.canvas && typeof loadedNotes.canvas !== 'string') {
                         loadedNotes.canvas = null;
@@ -214,7 +254,6 @@ ${notes.jot || "No notes."}
     }, [videoId]);
 
     useEffect(() => {
-        // Log view start
         if (videoId) {
             addToHistory({ videoId, title, thumbnailUrl });
         }
@@ -251,7 +290,6 @@ ${notes.jot || "No notes."}
                 setDuration(dur);
                 if (dur > 0) setProgress(time / dur);
 
-                // Log history every 30s
                 if (Date.now() - lastLogTimeRef.current > 30000) {
                     addToHistory({
                         videoId, title, thumbnailUrl,
@@ -288,6 +326,9 @@ ${notes.jot || "No notes."}
         setDuration(event.target.getDuration());
         setVolume(event.target.getVolume());
         setMuted(event.target.isMuted());
+        // Explicitly ensure it's not playing if autoplay is 0
+        event.target.pauseVideo();
+        setPlaying(false);
     };
 
     const handlePlayerStateChange = (event: { data: number, target: YouTubePlayer }) => {
@@ -358,9 +399,6 @@ ${notes.jot || "No notes."}
         return `${mm}:${ss}`;
     };
 
-    // --- Notebook Logic ---
-    const toggleSidebar = () => setShowSidebar(!showSidebar);
-
     const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const val = e.target.value;
         if (noteType !== 'visual') {
@@ -408,7 +446,7 @@ ${notes.jot || "No notes."}
         height: '100%',
         width: '100%',
         playerVars: {
-            autoplay: 1,
+            autoplay: 0, // Auto-pause initially
             controls: 0,
             modestbranding: 1,
             rel: 0,
@@ -433,242 +471,208 @@ ${notes.jot || "No notes."}
         setTutorResponse(null);
     }, [tutorResponse]);
 
-    const sidebarWidth = 400;
-
     if (!hasMounted) return <div className="fixed inset-0 bg-black" />;
 
     return (
-        <div
-            className="fixed inset-0 z-50 flex flex-col bg-black text-white select-none"
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() => setShowControls(false)}
-        >
-            {/* Custom Header Overlay */}
-            <div className={cn(
-                "absolute top-0 left-0 right-0 z-20 p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-start transition-opacity duration-300 pointer-events-none",
-                showControls ? "opacity-100" : "opacity-0"
-            )}>
-                <div className="flex flex-col pointer-events-auto">
-                    <h1 className="text-lg font-medium tracking-tight drop-shadow-md">{title}</h1>
-                    <span className="text-xs text-white/60">Focus Mode</span>
-                </div>
-                <div className="flex gap-4 pointer-events-auto">
-                    <Button
-                        variant="ghost"
-                        className="hidden md:flex bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm gap-2"
-                        onClick={toggleSidebar}
-                    >
-                        <FileText className="h-4 w-4" />
-                        Notebook
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm rounded-full"
-                        onClick={() => router.back()}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+        <div ref={containerRef} className="fixed inset-0 z-50 flex flex-col md:flex-row bg-black text-white select-none overflow-hidden">
 
-            <div className="flex-1 flex relative overflow-hidden bg-black flex-col md:flex-row">
-                {/* Responsive Layout Container */}
-                <div
-                    className={cn(
-                        "relative transition-all duration-300 ease-in-out bg-black",
-                        showSidebar ? "md:mr-[400px]" : "md:mr-0",
-                        showMobileNotes ? "h-[30vh] flex-none z-50 sticky top-0" : "flex-1 h-full"
-                    )}
-                >
-                    {/* Player Wrapper */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black">
-                        <YouTube
-                            videoId={videoId}
-                            opts={opts}
-                            onReady={handlePlayerReady}
-                            onStateChange={handlePlayerStateChange}
-                            onEnd={onComplete}
-                            className="absolute inset-0 w-full h-full"
-                            iframeClassName="w-full h-full"
-                        />
+            {/* VIDEO SECTION */}
+            <div
+                className="relative bg-black group"
+                style={{ flex: `0 0 ${splitRatio * 100}%` }}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={() => setShowControls(false)}
+            >
+                {/* Pointer events overlay for dragging protection */}
+                {isDragging && <div className="absolute inset-0 z-[60] bg-transparent" />}
+
+                {/* Custom Header Overlay */}
+                <div className={cn(
+                    "absolute top-0 left-0 right-0 z-20 p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-start transition-opacity duration-300 pointer-events-none",
+                    showControls ? "opacity-100" : "opacity-0"
+                )}>
+                    <div className="flex flex-col pointer-events-auto">
+                        <h1 className="text-lg font-medium tracking-tight drop-shadow-md line-clamp-1">{title}</h1>
+                        <span className="text-xs text-white/60">Focus Mode</span>
                     </div>
-
-                    {/* Controls & Overlays (Same as before) */}
-                    {!playing && (
-                        <div
-                            className="absolute inset-0 flex items-center justify-center z-10 bg-black/10 hover:bg-black/20 transition-colors cursor-pointer"
-                            onClick={() => player?.playVideo()}
+                    <div className="flex gap-4 pointer-events-auto">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm rounded-full"
+                            onClick={() => router.back()}
                         >
-                            <div className="h-20 w-20 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center animate-in zoom-in-50 duration-200 border border-white/10 shadow-xl">
-                                <Play className="h-10 w-10 fill-white text-white ml-1" />
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Player Wrapper */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black">
+                    <YouTube
+                        videoId={videoId}
+                        opts={opts}
+                        onReady={handlePlayerReady}
+                        onStateChange={handlePlayerStateChange}
+                        onEnd={onComplete}
+                        className="absolute inset-0 w-full h-full"
+                        iframeClassName="w-full h-full"
+                    />
+                </div>
+
+                {/* Play Button Overlay */}
+                {!playing && (
+                    <div
+                        className="absolute inset-0 flex items-center justify-center z-10 bg-black/10 hover:bg-black/20 transition-colors cursor-pointer"
+                        onClick={() => player?.playVideo()}
+                    >
+                        <div className="h-20 w-20 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center animate-in zoom-in-50 duration-200 border border-white/10 shadow-xl">
+                            <Play className="h-10 w-10 fill-white text-white ml-1" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Custom Bottom Controls */}
+                <div className={cn(
+                    "absolute bottom-0 left-0 right-0 z-20 px-6 py-6 pb-8 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-2 pointer-events-auto",
+                    showControls ? "opacity-100" : "opacity-0"
+                )}>
+                    <div className="flex items-center gap-4 group">
+                        <span className="text-xs font-mono w-10 text-right">{formatTime(currentTime)}</span>
+                        <div className="flex-1 h-1.5 bg-white/20 rounded-full relative cursor-pointer group-hover:h-2 transition-all">
+                            <input
+                                type="range"
+                                min={0}
+                                max={0.999999}
+                                step="any"
+                                value={progress}
+                                onChange={handleSeekChange}
+                                onMouseUp={handleSeekMouseUp}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />
+                            <div
+                                className="h-full bg-primary rounded-full relative"
+                                style={{ width: `${progress * 100}%` }}
+                            >
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow scale-0 group-hover:scale-100 transition-transform" />
                             </div>
                         </div>
-                    )}
+                        <span className="text-xs font-mono w-10">{formatTime(duration)}</span>
+                    </div>
 
-                    {/* Custom Bottom Controls */}
-                    <div className={cn(
-                        "absolute bottom-0 left-0 right-0 z-20 px-6 py-6 pb-8 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-2 pointer-events-auto",
-                        showControls ? "opacity-100" : "opacity-0"
-                    )}>
-                        {/* Progress Bar (Same as before) */}
-                        <div className="flex items-center gap-4 group">
-                            <span className="text-xs font-mono w-10 text-right">{formatTime(currentTime)}</span>
-                            <div className="flex-1 h-1.5 bg-white/20 rounded-full relative cursor-pointer group-hover:h-2 transition-all">
+                    <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-4">
+                            <button onClick={togglePlay} className="hover:text-primary transition-colors">
+                                {playing ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current" />}
+                            </button>
+                            <button onClick={() => {
+                                const newTime = Math.max(0, currentTime - 10);
+                                player?.seekTo(newTime, true);
+                            }} className="hover:text-primary transition-colors">
+                                <Rewind className="h-5 w-5" />
+                            </button>
+                            <button onClick={() => {
+                                const newTime = Math.min(duration, currentTime + 10);
+                                player?.seekTo(newTime, true);
+                            }} className="hover:text-primary transition-colors">
+                                <SkipForward className="h-5 w-5" />
+                            </button>
+
+                            <div className="flex items-center gap-2 group relative ml-4">
+                                <button onClick={toggleMute} className="hover:text-primary transition-colors">
+                                    {muted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                                </button>
                                 <input
                                     type="range"
                                     min={0}
-                                    max={0.999999}
-                                    step="any"
-                                    value={progress}
-                                    onChange={handleSeekChange}
-                                    onMouseUp={handleSeekMouseUp}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    max={100}
+                                    step={1}
+                                    value={muted ? 0 : volume}
+                                    onChange={handleVolumeChange}
+                                    className="w-20 h-1 accent-white"
                                 />
-                                <div
-                                    className="h-full bg-primary rounded-full relative"
-                                    style={{ width: `${progress * 100}%` }}
-                                >
-                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow scale-0 group-hover:scale-100 transition-transform" />
-                                </div>
                             </div>
-                            <span className="text-xs font-mono w-10">{formatTime(duration)}</span>
                         </div>
 
-                        {/* Control Buttons (Same as before) */}
-                        <div className="flex items-center justify-between mt-1">
-                            <div className="flex items-center gap-4">
-                                <button onClick={togglePlay} className="hover:text-primary transition-colors">
-                                    {playing ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current" />}
-                                </button>
-                                <button onClick={() => {
-                                    const newTime = Math.max(0, currentTime - 10);
-                                    player?.seekTo(newTime, true);
-                                }} className="hover:text-primary transition-colors">
-                                    <Rewind className="h-5 w-5" />
-                                </button>
-                                <button onClick={() => {
-                                    const newTime = Math.min(duration, currentTime + 10);
-                                    player?.seekTo(newTime, true);
-                                }} className="hover:text-primary transition-colors">
-                                    <SkipForward className="h-5 w-5" />
-                                </button>
-
-                                <div className="flex items-center gap-2 group relative ml-4">
-                                    <button onClick={toggleMute} className="hover:text-primary transition-colors">
-                                        {muted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                                    </button>
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={100}
-                                        step={1}
-                                        value={muted ? 0 : volume}
-                                        onChange={handleVolumeChange}
-                                        className="w-20 h-1 accent-white"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <button
-                                    className="text-sm font-bold bg-white/10 px-2 py-1 rounded hover:bg-white/20 min-w-[3rem]"
-                                    onClick={handleRateChange}
-                                >
-                                    {playbackRate}x
-                                </button>
-                                <button className="hover:text-primary transition-colors">
-                                    <Maximize className="h-5 w-5" onClick={() => {
-                                        if (document.fullscreenElement) document.exitFullscreen();
-                                        else document.documentElement.requestFullscreen();
-                                    }} />
-                                </button>
-                            </div>
+                        <div className="flex items-center gap-4">
+                            <button
+                                className="text-sm font-bold bg-white/10 px-2 py-1 rounded hover:bg-white/20 min-w-[3rem]"
+                                onClick={handleRateChange}
+                            >
+                                {playbackRate}x
+                            </button>
+                            <button className="hover:text-primary transition-colors">
+                                <Maximize className="h-5 w-5" onClick={() => {
+                                    if (document.fullscreenElement) document.exitFullscreen();
+                                    else document.documentElement.requestFullscreen();
+                                }} />
+                            </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Intelligent Notebook Sidebar */}
-                <div
-                    className={cn(
-                        "hidden md:flex fixed right-0 top-0 bottom-0 bg-zinc-950 border-l border-zinc-900 shadow-2xl transform transition-transform duration-300 flex-col z-30",
-                        showSidebar ? "translate-x-0" : "translate-x-full"
-                    )}
-                    style={{ width: `${sidebarWidth}px` }}
-                >
-                    {/* Video Header & Actions */}
-                    <div className="p-4 border-b border-zinc-900 bg-zinc-950/80 sticky top-0 z-10">
-                        <div className="flex items-start justify-between gap-4 mb-2">
-                            <h2 className="text-sm font-semibold leading-snug line-clamp-2 text-zinc-100 flex-1">{title}</h2>
-                            <div className="flex items-center gap-1">
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 hover:bg-zinc-800 rounded-full"
-                                    onClick={toggleSave}
-                                    title={saved ? "Remove from Watch Later" : "Save to Watch Later"}
-                                >
-                                    <Bookmark className={cn("h-4 w-4", saved && "fill-white text-white")} />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => setShowSidebar(false)} className="h-8 w-8 text-zinc-500 hover:text-white">
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                            </div>
+            {/* RESIZER */}
+            <div
+                className="w-full h-4 md:w-4 md:h-full bg-zinc-950 flex items-center justify-center cursor-row-resize md:cursor-col-resize hover:bg-primary/20 transition-colors z-40 touch-none flex-shrink-0 border-y md:border-y-0 md:border-x border-zinc-900"
+                onMouseDown={startResizing}
+                onTouchStart={startResizing}
+            >
+                <div className="w-10 h-1 md:w-1 md:h-10 bg-zinc-800 rounded-full" />
+            </div>
+
+            {/* NOTES SECTION */}
+            <div
+                className="flex-1 flex flex-col bg-zinc-950 min-w-0" // min-w-0 important for flex child truncation
+            >
+                {/* Notebook Header */}
+                <div className="p-4 border-b border-zinc-900 bg-zinc-950/80 sticky top-0 z-10 flex flex-col gap-2">
+                    {/* Video Info in Notes (good for context if video pane is small) */}
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <span className="font-semibold text-zinc-300 text-sm uppercase tracking-wider">Notebook</span>
                         </div>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 hover:bg-zinc-800 rounded-full"
+                                onClick={toggleSave}
+                                title={saved ? "Remove from Watch Later" : "Save to Watch Later"}
+                            >
+                                <Bookmark className={cn("h-4 w-4", saved && "fill-white text-white")} />
+                            </Button>
 
-                        {/* Description Collapsible */}
-                        {description && (
-                            <div className="text-xs text-zinc-500">
-                                <button
-                                    onClick={() => setDescOpen(!descOpen)}
-                                    className="flex items-center gap-1 hover:text-white transition-colors"
+                            <div className="relative">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
+                                    onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                                    title="Export Notes"
                                 >
-                                    {descOpen ? "Hide Description" : "Show Description"}
-                                    {descOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                </button>
-                                {descOpen && (
-                                    <div className="mt-2 text-zinc-400 whitespace-pre-wrap max-h-40 overflow-y-auto pr-1 leading-relaxed">
-                                        {description}
+                                    <Share2 className="h-4 w-4" />
+                                </Button>
+                                {exportMenuOpen && (
+                                    <div className="absolute top-8 right-0 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 z-50">
+                                        <button onClick={() => handleExport('md')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
+                                            <Copy className="h-3 w-3" /> Copy Markdown
+                                        </button>
+                                        <button onClick={() => handleExport('pdf')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
+                                            <Download className="h-3 w-3" /> Download PDF
+                                        </button>
+                                        <button onClick={() => handleExport('txt')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
+                                            <FileText className="h-3 w-3" /> Download TXT
+                                        </button>
                                     </div>
                                 )}
                             </div>
-                        )}
-                    </div>
-
-                    {/* Notebook Header */}
-                    <div className="px-4 py-2 border-b border-zinc-900 flex items-center justify-between bg-zinc-950/50">
-                        <div className="flex items-center gap-2">
-                            <span className="font-semibold text-zinc-300 text-xs uppercase tracking-wider">Notebook</span>
-                        </div>
-                        <div className="flex items-center gap-1 relative">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 text-zinc-400 hover:text-white"
-                                onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                                title="Export Notes"
-                            >
-                                <Share2 className="h-3 w-3" />
-                            </Button>
-
-                            {exportMenuOpen && (
-                                <div className="absolute top-8 right-0 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 z-50">
-                                    <button onClick={() => handleExport('md')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
-                                        <Copy className="h-3 w-3" /> Copy Markdown
-                                    </button>
-                                    <button onClick={() => handleExport('pdf')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
-                                        <Download className="h-3 w-3" /> Download PDF
-                                    </button>
-                                    <button onClick={() => handleExport('txt')} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white rounded text-left transition-colors w-full">
-                                        <FileText className="h-3 w-3" /> Download TXT
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </div>
 
                     {/* Mode Switcher */}
-                    <div className="flex p-2 gap-1 border-b border-zinc-900 bg-zinc-900/50">
+                    <div className="flex p-1 gap-1 bg-zinc-900/50 rounded-lg border border-zinc-800">
                         {(['jot', 'summary', 'visual'] as NoteType[]).map((type) => (
                             <button
                                 key={type}
@@ -685,172 +689,12 @@ ${notes.jot || "No notes."}
                             </button>
                         ))}
                     </div>
-
-                    {/* Editor Area */}
-                    <div className="flex-1 flex flex-col relative bg-zinc-950 overflow-hidden">
-                        {noteType === 'visual' ? (
-                            <div className="flex-1 w-full h-full bg-zinc-950 relative">
-                                <Scratchpad
-                                    initialData={typeof notes.canvas === 'string' ? notes.canvas : undefined}
-                                    onSave={handleScratchpadSave}
-                                    isDark={true}
-                                />
-                            </div>
-                        ) : (
-                            <textarea
-                                className="flex-1 w-full bg-zinc-950 p-6 resize-none focus:outline-none text-zinc-300 text-sm leading-relaxed font-mono"
-                                placeholder={
-                                    noteType === 'jot' ? "Jot down raw thoughts..." :
-                                        "Summarize the key takeaways..."
-                                }
-                                value={notes[noteType as 'jot' | 'summary']}
-                                onChange={handleNoteChange}
-                            />
-                        )}
-
-                        {/* Gemini Assistant Zone */}
-                        <div className="bg-zinc-900/80 backdrop-blur-md border-t border-zinc-800 p-4 space-y-3">
-                            {tutorResponse ? (
-                                <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm text-zinc-200 animate-in fade-in slide-in-from-bottom-2">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                                            <Sparkles className="h-3 w-3" /> Gemini Tutor
-                                        </span>
-                                        <button onClick={() => setTutorResponse(null)} className="text-zinc-500 hover:text-white"><X className="h-3 w-3" /></button>
-                                    </div>
-                                    <p className="leading-relaxed whitespace-pre-wrap mb-3">{tutorResponse}</p>
-
-                                    <div className="flex gap-2">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-6 text-[10px] bg-primary/20 hover:bg-primary/30 text-white border border-primary/20 px-2"
-                                            onClick={() => addToNotes('jot')}
-                                        >
-                                            + Add to Jot
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-6 text-[10px] bg-primary/20 hover:bg-primary/30 text-white border border-primary/20 px-2"
-                                            onClick={() => addToNotes('summary')}
-                                        >
-                                            + Add to Summary
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:border-primary/50 focus:outline-none"
-                                            placeholder="Ask a question..."
-                                            value={tutorInput}
-                                            onChange={(e) => setTutorInput(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && askTutor('explain')}
-                                        />
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 text-primary hover:bg-primary/20"
-                                            disabled={isTutorLoading}
-                                            onClick={() => askTutor('explain')}
-                                        >
-                                            <Sparkles className={cn("h-4 w-4", isTutorLoading && "animate-spin")} />
-                                        </Button>
-                                    </div>
-                                    {noteType !== 'visual' && (
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="flex-1 h-7 text-[10px] border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-400"
-                                                onClick={() => askTutor('refine')}
-                                                disabled={!notes[noteType as 'jot' | 'summary'].trim() || isTutorLoading}
-                                            >
-                                                Refine Notes
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="flex-1 h-7 text-[10px] border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-400"
-                                                onClick={() => askTutor('socratic')}
-                                                disabled={isTutorLoading}
-                                            >
-                                                Test Me
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex justify-between items-center">
-                        <span className="text-xs text-zinc-600">Autosaved</span>
-                        <Button size="sm" onClick={handleComplete} className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
-                            <CheckCircle className="h-4 w-4" />
-                            Finish Session
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Mobile Notes Drawer */}
-            <div className={cn(
-                "md:hidden fixed inset-x-0 bottom-0 z-50 bg-zinc-950 border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.8)] transition-transform duration-300 ease-out flex flex-col h-[65vh] rounded-t-[20px]",
-                showMobileNotes ? "translate-y-0" : "translate-y-[110%]"
-            )}>
-                {/* Drawer Handle & Header */}
-                <div
-                    className="flex-none flex items-center justify-between px-4 py-3 border-b border-white/5 bg-zinc-900/50 backdrop-blur-xl rounded-t-[20px] cursor-grab active:cursor-grabbing touch-none relative"
-                    onClick={() => setShowMobileNotes(false)}
-                >
-                    {/* Handle Indicator */}
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-zinc-700/50 rounded-full" />
-
-                    <div className="flex items-center gap-3 pt-2">
-                        <span className="font-semibold text-zinc-100 text-sm tracking-wide">Notebook</span>
-                    </div>
-
-                    <div className="flex gap-1 pt-2">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
-                            onClick={(e) => { e.stopPropagation(); setExportMenuOpen(!exportMenuOpen); }}
-                        >
-                            <Share2 className="h-4 w-4" />
-                        </Button>
-                    </div>
                 </div>
 
-                {/* Mode Switcher */}
-                <div className="flex items-center justify-center p-2 border-b border-zinc-900 gap-2 bg-zinc-950">
-                    <div className="flex gap-1 bg-zinc-900 rounded-lg p-0.5 border border-zinc-800 w-full">
-                        {(['jot', 'summary', 'visual'] as NoteType[]).map((type) => (
-                            <button
-                                key={type}
-                                onClick={(e) => { e.stopPropagation(); setNoteType(type); }}
-                                className={cn(
-                                    "flex-1 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-md transition-colors flex items-center justify-center gap-1",
-                                    noteType === type
-                                        ? "bg-zinc-800 text-white shadow-sm"
-                                        : "text-zinc-500 hover:text-zinc-300"
-                                )}
-                            >
-                                {type === 'visual' && <PenTool className="h-3 w-3" />}
-                                {type !== 'visual' && type}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Mobile Editor */}
-                <div className="flex-1 overflow-hidden relative bg-zinc-950">
+                {/* Editor Area */}
+                <div className="flex-1 flex flex-col relative bg-zinc-950 overflow-hidden">
                     {noteType === 'visual' ? (
-                        <div className="w-full h-full">
+                        <div className="flex-1 w-full h-full bg-zinc-950 relative">
                             <Scratchpad
                                 initialData={typeof notes.canvas === 'string' ? notes.canvas : undefined}
                                 onSave={handleScratchpadSave}
@@ -859,30 +703,103 @@ ${notes.jot || "No notes."}
                         </div>
                     ) : (
                         <textarea
-                            className="w-full h-full bg-zinc-950 p-4 resize-none focus:outline-none text-zinc-300 text-sm leading-relaxed font-mono"
-                            placeholder={noteType === 'jot' ? "Start typing..." : "Write summary..."}
+                            className="flex-1 w-full bg-zinc-950 p-6 resize-none focus:outline-none text-zinc-300 text-sm leading-relaxed font-mono"
+                            placeholder={
+                                noteType === 'jot' ? "Jot down raw thoughts..." :
+                                    "Summarize the key takeaways..."
+                            }
                             value={notes[noteType as 'jot' | 'summary']}
-                            onChange={(e) => setNotes(prev => ({ ...prev, [noteType]: e.target.value }))}
+                            onChange={handleNoteChange}
                         />
                     )}
-                </div>
-            </div>
 
-            {/* Mobile Open Notes Trigger (Floating Button) */}
-            {!showMobileNotes && !showSidebar && (
-                <div className="md:hidden fixed bottom-24 right-4 z-40 transition-opacity duration-300">
-                    <Button
-                        size="icon"
-                        className={cn(
-                            "rounded-full h-12 w-12 shadow-2xl bg-zinc-800/80 backdrop-blur-md border border-white/10 text-white hover:bg-zinc-700 transition-transform active:scale-95",
-                            // Hide if controls are hidden? No, keep it accessible but unobtrusive
+                    {/* Gemini Assistant Zone */}
+                    <div className="bg-zinc-900/80 backdrop-blur-md border-t border-zinc-800 p-4 space-y-3">
+                        {tutorResponse ? (
+                            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm text-zinc-200 animate-in fade-in slide-in-from-bottom-2">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                                        <Sparkles className="h-3 w-3" /> Gemini Tutor
+                                    </span>
+                                    <button onClick={() => setTutorResponse(null)} className="text-zinc-500 hover:text-white"><X className="h-3 w-3" /></button>
+                                </div>
+                                <p className="leading-relaxed whitespace-pre-wrap mb-3">{tutorResponse}</p>
+
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 text-[10px] bg-primary/20 hover:bg-primary/30 text-white border border-primary/20 px-2"
+                                        onClick={() => addToNotes('jot')}
+                                    >
+                                        + Add to Jot
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 text-[10px] bg-primary/20 hover:bg-primary/30 text-white border border-primary/20 px-2"
+                                        onClick={() => addToNotes('summary')}
+                                    >
+                                        + Add to Summary
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:border-primary/50 focus:outline-none"
+                                        placeholder="Ask a question..."
+                                        value={tutorInput}
+                                        onChange={(e) => setTutorInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && askTutor('explain')}
+                                    />
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 w-8 p-0 text-primary hover:bg-primary/20"
+                                        disabled={isTutorLoading}
+                                        onClick={() => askTutor('explain')}
+                                    >
+                                        <Sparkles className={cn("h-4 w-4", isTutorLoading && "animate-spin")} />
+                                    </Button>
+                                </div>
+                                {noteType !== 'visual' && (
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1 h-7 text-[10px] border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-400"
+                                            onClick={() => askTutor('refine')}
+                                            disabled={!notes[noteType as 'jot' | 'summary'].trim() || isTutorLoading}
+                                        >
+                                            Refine Notes
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1 h-7 text-[10px] border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-400"
+                                            onClick={() => askTutor('socratic')}
+                                            disabled={isTutorLoading}
+                                        >
+                                            Test Me
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         )}
-                        onClick={() => setShowMobileNotes(true)}
-                    >
-                        <FileText className="h-5 w-5" />
+                    </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex justify-between items-center">
+                    <span className="text-xs text-zinc-600">Autosaved</span>
+                    <Button size="sm" onClick={handleComplete} className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
+                        <CheckCircle className="h-4 w-4" />
+                        Finish Session
                     </Button>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

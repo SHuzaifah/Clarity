@@ -27,10 +27,18 @@ export const Header = memo(function Header() {
                 <div className="flex items-center gap-2">
                     {/* Replaced Sidebar Menu with Logo for mobile */}
                     <Link href="/dashboard" className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                            <span className="font-bold text-primary">C</span>
+                        <div className="relative h-8 w-auto aspect-[3/1]">
+                            <img
+                                src="/logo-black.png"
+                                alt="Clarity"
+                                className="h-full w-auto object-contain dark:hidden"
+                            />
+                            <img
+                                src="/logo-white.png"
+                                alt="Clarity"
+                                className="h-full w-auto object-contain hidden dark:block"
+                            />
                         </div>
-                        <span className="font-bold text-xl hidden md:block">Clarity</span>
                     </Link>
                 </div>
 
