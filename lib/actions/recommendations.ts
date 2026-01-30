@@ -134,12 +134,10 @@ export async function getPersonalizedRecommendations(userId: string): Promise<Vi
     // Sort by score and return top 20 (reduced from 50)
     return scoredVideos
         .sort((a, b) => {
-            // Add a random factor to the score (0-5 points swing) to shuffle top results
-            // This ensures "new videos on refresh" while keeping relevance
-            const randomFactor = (Math.random() - 0.5) * 5;
-            const scoreDiff = (b.score - a.score) + randomFactor;
-            if (Math.abs(scoreDiff) > 5) return scoreDiff; // Respect significant score differences
-            return Math.random() - 0.5; // Shuffle similar scores
+            const scoreDiff = b.score - a.score;
+            if (scoreDiff !== 0) return scoreDiff;
+            // Use video ID as tiebreaker for deterministic sorting
+            return a.video.id.localeCompare(b.video.id);
         })
         .slice(0, 20)
         .map(item => item.video);

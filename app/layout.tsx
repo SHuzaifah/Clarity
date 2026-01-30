@@ -1,12 +1,4 @@
-import type { Metadata, Viewport } from "next";
-
-export const viewport: Viewport = {
-  themeColor: "#0A0A0A", // Matching the dark theme background
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-};
-
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
