@@ -186,64 +186,22 @@ export function FocusPlayer({
                 isFullscreen ? "h-screen fixed inset-0 z-50 bg-black" : ""
             )}
         >
+            {/* VIDEO SECTION - Cleaned up to remove overlay */}
             <div
                 style={{
                     flexBasis: isFullscreen ? '100%' : `${splitRatio * 100}%`,
                     height: isMobile && !isFullscreen ? `${splitRatio * 100}%` : 'auto'
                 }}
-                className="relative bg-black shrink-0 flex flex-col min-h-0 transition-[flex-basis,height] duration-100 ease-out group"
+                className="relative bg-black shrink-0 flex flex-col min-h-0 transition-[flex-basis,height] duration-100 ease-out z-10"
             >
-                {/* Header Overlay */}
-                <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="flex items-center gap-3 pointer-events-auto">
-                        <Link href="/dashboard" className="p-2 bg-black/40 text-white rounded-full hover:bg-black/60 transition-colors backdrop-blur-md">
-                            <ArrowLeft className="h-5 w-5" />
-                        </Link>
-                        {!isFullscreen && (
-                            <div className="text-white drop-shadow-md">
-                                <h1 className="font-semibold text-sm line-clamp-1 max-w-[200px]">{title}</h1>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex gap-2 pointer-events-auto">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setActiveTab(activeTab === 'info' ? 'notes' : 'info')}
-                            className={cn(
-                                "rounded-full backdrop-blur-md transition-colors",
-                                activeTab === 'info'
-                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                    : "bg-black/40 text-white hover:bg-black/60"
-                            )}
-                            title="Video Info"
-                        >
-                            <Info className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsBookmarked(!isBookmarked)}
-                            className={cn(
-                                "rounded-full backdrop-blur-md transition-colors",
-                                isBookmarked ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-black/40 text-white hover:bg-black/60"
-                            )}
-                        >
-                            {isBookmarked ? <Check className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsFullscreen(!isFullscreen)}
-                            className="bg-black/40 text-white rounded-full hover:bg-black/60 backdrop-blur-md"
-                        >
-                            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                        </Button>
-                    </div>
+                {/* Back Button Overlay - Minimal and essential */}
+                <div className="absolute top-4 left-4 z-20 opacity-0 hover:opacity-100 transition-opacity duration-300">
+                    <Link href="/dashboard" className="p-2 bg-black/60 text-white rounded-full hover:bg-black/80 backdrop-blur-md">
+                        <ArrowLeft className="h-5 w-5" />
+                    </Link>
                 </div>
 
-                <div className="w-full h-full relative z-0 bg-black">
+                <div className="w-full h-full relative">
                     <ReactPlayer
                         ref={playerRef}
                         url={`https://www.youtube.com/watch?v=${videoId}`}
@@ -256,7 +214,6 @@ export function FocusPlayer({
                         onPause={() => setIsPlaying(false)}
                         onEnded={() => setIsPlaying(false)}
                         controls={true}
-
                         style={{ position: 'absolute', top: 0, left: 0 }}
                         config={{
                             youtube: {
@@ -273,62 +230,115 @@ export function FocusPlayer({
                 </div>
             </div>
 
+            {/* DRAG HANDLE (Hidden in Fullscreen) */}
             {!isFullscreen && (
                 <div
                     onMouseDown={handleMouseDown}
                     onTouchStart={handleMouseDown}
                     className={cn(
-                        "z-10 flex items-center justify-center hover:bg-primary/20 transition-colors touch-none",
+                        "z-20 flex items-center justify-center hover:bg-primary/20 transition-colors touch-none bg-background/50 backdrop-blur-sm border-border/40",
                         isMobile
-                            ? "h-4 w-full cursor-row-resize py-1 -mt-2 relative"
-                            : "w-4 h-full cursor-col-resize px-1 -ml-2 relative"
+                            ? "h-2 w-full cursor-row-resize border-y"
+                            : "w-2 h-full cursor-col-resize border-x"
                     )}
                 >
                     <div className={cn(
                         "rounded-full bg-border",
-                        isMobile ? "h-1 w-12" : "w-1 h-12"
+                        isMobile ? "h-1 w-8" : "w-1 h-8"
                     )} />
                 </div>
             )}
 
+            {/* CONTENT / TABS SECTION (Hidden in Fullscreen) */}
             {!isFullscreen && (
-                <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden relative border-l border-t border-border/40">
+                <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden relative">
 
-                    <div className="flex items-center border-b px-2 bg-muted/20 shrink-0">
-                        {[
-                            { id: "notes", icon: FileText, label: "Notes" },
-                            { id: "summary", icon: BrainCircuit, label: "Summary" },
-                            { id: "visual", icon: PenTool, label: "Visual" },
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as Tab)}
+                    {/* NEW HEADER: Title + Actions */}
+                    <div className="flex items-center justify-between px-4 py-2 border-b shrink-0 h-14 bg-background">
+                        <div className="min-w-0 flex-1 mr-4">
+                            <h1 className="font-semibold text-sm line-clamp-1" title={title}>{title}</h1>
+                            {channelTitle && <p className="text-xs text-muted-foreground line-clamp-1">{channelTitle}</p>}
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setActiveTab(activeTab === 'info' ? 'notes' : 'info')}
                                 className={cn(
-                                    "flex items-center gap-2 px-4 py-3 text-xs font-medium transition-colors relative outline-none focus:bg-muted/50",
-                                    activeTab === tab.id
-                                        ? "text-primary font-semibold bg-muted/30 rounded-t-lg"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/10 rounded-t-lg"
+                                    "h-8 w-8 rounded-full transition-colors",
+                                    activeTab === 'info'
+                                        ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                        : "text-muted-foreground hover:bg-muted"
                                 )}
+                                title="Info"
                             >
-                                <tab.icon className="h-3.5 w-3.5" />
-                                {tab.label}
-                            </button>
-                        ))}
+                                <Info className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsBookmarked(!isBookmarked)}
+                                className={cn(
+                                    "h-8 w-8 rounded-full transition-colors",
+                                    isBookmarked
+                                        ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                        : "text-muted-foreground hover:bg-muted"
+                                )}
+                                title="Bookmark Video"
+                            >
+                                {isBookmarked ? <Check className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsFullscreen(!isFullscreen)}
+                                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted"
+                                title="Maximize"
+                            >
+                                <Maximize2 className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
 
-                    <div className="flex-1 relative overflow-hidden">
+                    {/* Tabs Navigation */}
+                    {activeTab !== 'info' && (
+                        <div className="flex items-center gap-1 px-2 border-b bg-muted/5 shrink-0">
+                            {[
+                                { id: "notes", icon: FileText, label: "Notes" },
+                                { id: "summary", icon: BrainCircuit, label: "Summary" },
+                                { id: "visual", icon: PenTool, label: "Visual" },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id as Tab)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-3 py-2.5 text-xs font-medium transition-all rounded-t-sm outline-none",
+                                        activeTab === tab.id
+                                            ? "text-foreground bg-background border-x border-t border-border/50 shadow-sm relative top-[1px]"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                    )}
+                                >
+                                    <tab.icon className="h-3.5 w-3.5" />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Tab Panels */}
+                    <div className="flex-1 relative overflow-hidden bg-background">
                         {activeTab === "notes" && (
                             <div className="h-full flex flex-col">
-                                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
                                     <textarea
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder="Start typing references, ideas, or questions..."
-                                        className="w-full h-full resize-none bg-transparent outline-none leading-relaxed text-sm placeholder:text-muted-foreground/40 font-mono sm:font-sans p-1 focus:ring-0"
+                                        className="w-full h-full resize-none bg-transparent border-none outline-none leading-relaxed text-sm placeholder:text-muted-foreground/40 font-mono sm:font-sans p-4 focus:ring-0"
                                     />
                                 </div>
 
-                                <div className="p-3 border-t bg-muted/10 shrink-0">
+                                <div className="p-3 border-t bg-muted/5 shrink-0">
                                     {aiResponse && (
                                         <div className="mb-3 p-3 bg-primary/5 rounded-lg border border-primary/10 text-xs text-foreground/90 max-h-32 overflow-y-auto">
                                             <div className="flex items-center gap-2 text-primary font-semibold mb-1 xs uppercase tracking-wider">
@@ -346,12 +356,12 @@ export function FocusPlayer({
                                                 value={aiQuery}
                                                 onChange={(e) => setAiQuery(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && handleAiAsk('explain')}
-                                                placeholder="Ask AI to explain or refine..."
-                                                className="w-full pl-3 pr-8 py-2 rounded-md border bg-background text-sm outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                                                placeholder="Ask AI..."
+                                                className="w-full pl-3 pr-8 py-2 rounded-md border bg-background text-sm outline-none focus:ring-1 focus:ring-primary shadow-sm h-9"
                                             />
                                             <Sparkles className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground opacity-50" />
                                         </div>
-                                        <Button size="icon" onClick={() => handleAiAsk('explain')} disabled={!aiQuery.trim() || isAiLoading}>
+                                        <Button size="icon" className="h-9 w-9" onClick={() => handleAiAsk('explain')} disabled={!aiQuery.trim() || isAiLoading}>
                                             <Send className="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -368,17 +378,17 @@ export function FocusPlayer({
                                         variant="outline"
                                         onClick={() => handleAiAsk('refine')}
                                         disabled={isAiLoading}
-                                        className="h-8 text-xs gap-2"
+                                        className="h-7 text-xs gap-2 px-2"
                                     >
                                         <Sparkles className="h-3 w-3" />
-                                        {summary ? "Regenerate" : "Generate"}
+                                        Generate
                                     </Button>
                                 </div>
                                 <textarea
                                     value={summary}
                                     onChange={(e) => setSummary(e.target.value)}
                                     placeholder="Click Generate to create a structured summary of the video content..."
-                                    className="flex-1 w-full resize-none bg-muted/10 p-4 rounded-xl border-none outline-none text-sm placeholder:text-muted-foreground/40 leading-relaxed"
+                                    className="flex-1 w-full resize-none bg-muted/10 p-4 rounded-xl border-none outline-none text-sm placeholder:text-muted-foreground/40 leading-relaxed active:border-none focus:border-none"
                                 />
                             </div>
                         )}
@@ -394,16 +404,8 @@ export function FocusPlayer({
                         )}
 
                         {activeTab === "info" && (
-                            <div className="h-full overflow-y-auto p-6">
-                                <h1 className="text-xl font-bold mb-2">{title}</h1>
-                                {channelTitle && (
-                                    <div className="text-sm text-primary font-medium mb-6 flex items-center gap-2">
-                                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs">
-                                            {channelTitle[0]}
-                                        </div>
-                                        {channelTitle}
-                                    </div>
-                                )}
+                            <div className="h-full overflow-y-auto p-6 bg-background">
+                                <h2 className="text-lg font-bold mb-2">Description</h2>
                                 <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
                                     {description || "No description provided."}
                                 </div>
