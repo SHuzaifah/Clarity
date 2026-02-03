@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
     You do NOT chat casually. You explain, ask probing questions, or refine thoughts.
     Keep answers concise and relevant to the video context. 
     Do not say "Hello" or "How can I help". Jump straight to the value.
+    
+    IMPORTANT: Output your response in plain text or markdown. DO NOT wrap your response in JSON or any code blocks unless asked to write code.
     `;
 
     let userPrompt = "";

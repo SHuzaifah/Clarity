@@ -4,7 +4,7 @@ import dynamic from "next/dynamic"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const FocusPlayer = dynamic(
-    () => import("@/components/focus-player").then(mod => mod.FocusPlayer),
+    () => import("./focus-player"),
     {
         loading: () => (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
