@@ -14,13 +14,8 @@ import {
     Bookmark,
     Info,
     Send,
-    GripVertical,
-    GripHorizontal,
-    MoreVertical,
-    Check,
-    Plus
+    Check
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Scratchpad from "@/components/scratchpad";
@@ -48,6 +43,7 @@ export function FocusPlayer({
     nextStepUrl,
     onComplete
 }: FocusPlayerProps) {
+    const [hasMounted, setHasMounted] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -73,8 +69,9 @@ export function FocusPlayer({
     const playerRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Detect Mobile
+    // Detect Mount & Mobile
     useEffect(() => {
+        setHasMounted(true);
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);
@@ -185,6 +182,8 @@ export function FocusPlayer({
         }
     };
 
+    if (!hasMounted) return null;
+
     return (
         <div
             ref={containerRef}
@@ -200,23 +199,36 @@ export function FocusPlayer({
                     flexBasis: isFullscreen ? '100%' : `${splitRatio * 100}%`,
                     height: isMobile && !isFullscreen ? `${splitRatio * 100}%` : 'auto'
                 }}
-                className="relative bg-black shrink-0 flex flex-col min-h-0 transition-[flex-basis,height] duration-100 ease-out"
+                className="relative bg-black shrink-0 flex flex-col min-h-0 transition-[flex-basis,height] duration-100 ease-out group"
             >
-                {/* Overlay Header (Always visible in fullscreen, auto-hide optional) */}
-                <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+                {/* Overlay Header */}
+                <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="flex items-center gap-3 pointer-events-auto">
                         <Link href="/dashboard" className="p-2 bg-black/40 text-white rounded-full hover:bg-black/60 transition-colors backdrop-blur-md">
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                         {!isFullscreen && (
                             <div className="text-white drop-shadow-md">
-                                <h1 className="font-semibold text-sm line-clamp-1">{title}</h1>
-                                {channelTitle && <p className="text-xs text-white/70 line-clamp-1">{channelTitle}</p>}
+                                <h1 className="font-semibold text-sm line-clamp-1 max-w-[200px]">{title}</h1>
                             </div>
                         )}
                     </div>
 
                     <div className="flex gap-2 pointer-events-auto">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setActiveTab(activeTab === 'info' ? 'notes' : 'info')}
+                            className={cn(
+                                "rounded-full backdrop-blur-md transition-colors",
+                                activeTab === 'info'
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "bg-black/40 text-white hover:bg-black/60"
+                            )}
+                            title="Video Info"
+                        >
+                            <Info className="h-4 w-4" />
+                        </Button>
                         <Button
                             variant="ghost"
                             size="icon"
@@ -240,7 +252,6 @@ export function FocusPlayer({
                 </div>
 
                 <div className="w-full h-full">
-                    {/* @ts-ignore */}
                     <ReactPlayer
                         ref={playerRef}
                         url={`https://www.youtube.com/watch?v=${videoId}`}
@@ -253,11 +264,18 @@ export function FocusPlayer({
                         onPause={() => setIsPlaying(false)}
                         onEnded={() => setIsPlaying(false)}
                         controls={true}
+                        light={false}
                         config={{
                             youtube: {
-                                playerVars: { showinfo: 0, modestbranding: 1, rel: 0, playsinline: 1 }
+                                playerVars: {
+                                    showinfo: 0,
+                                    modestbranding: 1,
+                                    rel: 0,
+                                    playsinline: 1,
+                                    origin: typeof window !== 'undefined' ? window.location.origin : undefined
+                                }
                             }
-                        } as any}
+                        }}
                     />
                 </div>
             </div>
@@ -291,7 +309,6 @@ export function FocusPlayer({
                             { id: "notes", icon: FileText, label: "Notes" },
                             { id: "summary", icon: BrainCircuit, label: "Summary" },
                             { id: "visual", icon: PenTool, label: "Visual" },
-                            { id: "info", icon: Info, label: "Info" },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -299,18 +316,12 @@ export function FocusPlayer({
                                 className={cn(
                                     "flex items-center gap-2 px-4 py-3 text-xs font-medium transition-colors relative",
                                     activeTab === tab.id
-                                        ? "text-primary"
-                                        : "text-muted-foreground hover:text-foreground"
+                                        ? "text-primary font-semibold bg-muted/30 rounded-t-lg"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/10 rounded-t-lg"
                                 )}
                             >
                                 <tab.icon className="h-3.5 w-3.5" />
                                 {tab.label}
-                                {activeTab === tab.id && (
-                                    <motion.div
-                                        layoutId="tab-underline"
-                                        className="absolute bottom-0 left-0 w-full h-[2px] bg-primary"
-                                    />
-                                )}
                             </button>
                         ))}
                     </div>
@@ -396,7 +407,7 @@ export function FocusPlayer({
                             </div>
                         )}
 
-                        {/* INFO TAB */}
+                        {/* INFO TAB (Triggered from Header) */}
                         {activeTab === "info" && (
                             <div className="h-full overflow-y-auto p-6">
                                 <h1 className="text-xl font-bold mb-2">{title}</h1>
