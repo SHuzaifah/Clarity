@@ -15,13 +15,17 @@ import {
     PenTool,
     FileText,
     BrainCircuit,
-    Layout
+    Layout,
+    PanelRightClose,
+    PanelRightOpen,
+    ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Scratchpad from "@/components/scratchpad";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 interface FocusPlayerProps {
     videoId: string;
@@ -34,7 +38,7 @@ interface FocusPlayerProps {
     onComplete?: () => void;
 }
 
-type Tab = "jot" | "summary" | "visual";
+type Tab = "notes" | "summary" | "visual";
 
 export function FocusPlayer({
     videoId,
@@ -47,7 +51,8 @@ export function FocusPlayer({
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
-    const [activeTab, setActiveTab] = useState<Tab>("jot");
+    const [activeTab, setActiveTab] = useState<Tab>("notes");
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Notes State
@@ -74,7 +79,7 @@ export function FocusPlayer({
     const togglePlay = () => setIsPlaying(!isPlaying);
 
     const handleAiAsk = async (action: "explain" | "refine" | "socratic") => {
-        if (!notes && !aiQuery) return;
+        if (!notes && !aiQuery && action !== 'refine') return;
 
         setIsAiLoading(true);
         setAiResponse(null);
@@ -88,7 +93,7 @@ export function FocusPlayer({
                     userQuery: aiQuery,
                     context: {
                         videoTitle: title,
-                        nodeTitle: title, // Using video title as node title for now
+                        nodeTitle: title,
                         currentNotes: notes,
                         timestamp: Math.round(progress)
                     }
@@ -98,11 +103,8 @@ export function FocusPlayer({
             const data = await res.json();
 
             if (data.response) {
-                // Formatting the response to remove any potential wrapping quotes if they exist
-                // and handling the "curly braces" issue the user reported
                 let cleanResponse = data.response;
                 if (typeof cleanResponse === 'object') {
-                    // Fallback if backend sends object
                     cleanResponse = JSON.stringify(cleanResponse, null, 2);
                 }
                 setAiResponse(cleanResponse);
@@ -113,40 +115,53 @@ export function FocusPlayer({
             setAiResponse("Failed to reach the AI tutor. Please try again.");
         } finally {
             setIsAiLoading(false);
-            setAiQuery(""); // Clear query after asking
+            setAiQuery("");
         }
     };
 
     return (
         <div className={cn(
-            "flex flex-col h-[calc(100vh-4rem)] gap-4 p-4 transition-all duration-500",
-            isExpanded ? "fixed inset-0 z-50 bg-background p-6" : ""
+            "flex flex-col h-[calc(100vh-2rem)] gap-4 p-2 transition-all duration-500",
+            isExpanded ? "fixed inset-0 z-50 bg-background p-4 h-screen" : ""
         )}>
             {/* Header / Controls */}
-            <div className="flex items-center justify-between shrink-0">
-                <div>
-                    <h1 className="text-xl font-bold line-clamp-1">{title}</h1>
-                    <p className="text-sm text-muted-foreground">Focus Session</p>
+            <div className="flex items-center justify-between shrink-0 px-2">
+                <div className="flex items-center gap-3">
+                    <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <ArrowLeft className="h-5 w-5" />
+                    </Link>
+                    <div>
+                        <h1 className="text-lg font-semibold line-clamp-1">{title}</h1>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setIsExpanded(!isExpanded)}
+                        title={isExpanded ? "Exit Fullscreen" : "Fullscreen"}
                     >
                         {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                     </Button>
-                    <Button onClick={onComplete} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Complete
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        title={isSidebarOpen ? "Hide Notes" : "Show Notes"}
+                        className={cn(isSidebarOpen && "bg-accent text-accent-foreground")}
+                    >
+                        {isSidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
                     </Button>
                 </div>
             </div>
 
-            <div className="flex flex-1 gap-6 min-h-0">
+            <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
                 {/* Video Area */}
-                <div className="flex-[2] relative rounded-2xl overflow-hidden bg-black shadow-2xl ring-1 ring-white/10">
-                    {/* @ts-ignore - ReactPlayer types are tricky, using ignore to ensure build succeeds */}
+                <motion.div
+                    layout
+                    className="flex-1 relative rounded-xl overflow-hidden bg-black shadow-2xl ring-1 ring-white/10"
+                >
+                    {/* @ts-ignore */}
                     <ReactPlayer
                         ref={playerRef}
                         url={`https://www.youtube.com/watch?v=${videoId}`}
@@ -155,153 +170,169 @@ export function FocusPlayer({
                         playing={isPlaying}
                         onProgress={handleProgress}
                         onDuration={handleDuration}
-                        controls
+                        controls={true}
                         config={{
                             youtube: {
-                                playerVars: { showinfo: 0, modestbranding: 1 }
+                                playerVars: { showinfo: 0, modestbranding: 1, rel: 0 }
                             }
                         } as any}
                     />
-                </div>
+                </motion.div>
 
-                {/* Tools Area */}
-                <div className="flex-1 flex flex-col bg-card rounded-2xl border shadow-sm overflow-hidden">
-                    {/* Tabs */}
-                    <div className="flex items-center border-b px-2 pt-2 gap-1 bg-muted/30">
-                        <button
-                            onClick={() => setActiveTab("jot")}
-                            className={cn(
-                                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors relative",
-                                activeTab === "jot"
-                                    ? "bg-card text-foreground"
-                                    : "text-muted-foreground hover:bg-card/50 hover:text-foreground"
-                            )}
+                {/* Sidebar Tools Area */}
+                <AnimatePresence mode="popLayout">
+                    {isSidebarOpen && (
+                        <motion.div
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 420, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="flex flex-col bg-card rounded-xl border shadow-sm overflow-hidden h-full"
                         >
-                            <BrainCircuit className="h-4 w-4" />
-                            Jot & Ask
-                            {activeTab === "jot" && (
-                                <motion.div layoutId="tab-indicator" className="absolute top-0 left-0 w-full h-[2px] bg-primary" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("summary")}
-                            className={cn(
-                                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors relative",
-                                activeTab === "summary"
-                                    ? "bg-card text-foreground"
-                                    : "text-muted-foreground hover:bg-card/50 hover:text-foreground"
-                            )}
-                        >
-                            <FileText className="h-4 w-4" />
-                            Summary
-                            {activeTab === "summary" && (
-                                <motion.div layoutId="tab-indicator" className="absolute top-0 left-0 w-full h-[2px] bg-primary" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("visual")}
-                            className={cn(
-                                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors relative",
-                                activeTab === "visual"
-                                    ? "bg-card text-foreground"
-                                    : "text-muted-foreground hover:bg-card/50 hover:text-foreground"
-                            )}
-                        >
-                            <PenTool className="h-4 w-4" />
-                            Visual
-                            {activeTab === "visual" && (
-                                <motion.div layoutId="tab-indicator" className="absolute top-0 left-0 w-full h-[2px] bg-primary" />
-                            )}
-                        </button>
-                    </div>
+                            {/* Tabs */}
+                            <div className="flex items-center border-b px-2 pt-2 gap-1 bg-muted/30 shrink-0">
+                                <button
+                                    onClick={() => setActiveTab("notes")}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-t-lg transition-colors relative",
+                                        activeTab === "notes"
+                                            ? "bg-card text-foreground"
+                                            : "text-muted-foreground hover:bg-card/50 hover:text-foreground"
+                                    )}
+                                >
+                                    <FileText className="h-3.5 w-3.5" />
+                                    Notes
+                                    {activeTab === "notes" && (
+                                        <motion.div layoutId="tab-indicator" className="absolute top-0 left-0 w-full h-[2px] bg-primary" />
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("summary")}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-t-lg transition-colors relative",
+                                        activeTab === "summary"
+                                            ? "bg-card text-foreground"
+                                            : "text-muted-foreground hover:bg-card/50 hover:text-foreground"
+                                    )}
+                                >
+                                    <BrainCircuit className="h-3.5 w-3.5" />
+                                    Summary
+                                    {activeTab === "summary" && (
+                                        <motion.div layoutId="tab-indicator" className="absolute top-0 left-0 w-full h-[2px] bg-primary" />
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("visual")}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-t-lg transition-colors relative",
+                                        activeTab === "visual"
+                                            ? "bg-card text-foreground"
+                                            : "text-muted-foreground hover:bg-card/50 hover:text-foreground"
+                                    )}
+                                >
+                                    <PenTool className="h-3.5 w-3.5" />
+                                    Visual
+                                    {activeTab === "visual" && (
+                                        <motion.div layoutId="tab-indicator" className="absolute top-0 left-0 w-full h-[2px] bg-primary" />
+                                    )}
+                                </button>
+                            </div>
 
-                    {/* Tab Content */}
-                    <div className="flex-1 relative overflow-hidden bg-card">
-                        <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+                            {/* Tab Content */}
+                            <div className="flex-1 relative overflow-hidden bg-card text-sm">
+                                <div className="absolute inset-0 overflow-y-auto custom-scrollbar flex flex-col">
 
-                            {activeTab === "jot" && (
-                                <div className="flex flex-col h-full">
-                                    <div className="flex-1 p-4 relative">
-                                        <textarea
-                                            value={notes}
-                                            onChange={(e) => setNotes(e.target.value)}
-                                            placeholder="Capture your thoughts here..."
-                                            className="w-full h-full resize-none bg-transparent outline-none text-base leading-relaxed placeholder:text-muted-foreground/50"
-                                        />
-                                    </div>
-
-                                    {/* AI Assistant Section */}
-                                    <div className="border-t bg-muted/10 p-4 space-y-3">
-                                        {aiResponse && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="bg-primary/5 border border-primary/10 rounded-lg p-3 text-sm text-foreground/90 shadow-sm"
-                                            >
-                                                <div className="flex items-center gap-2 text-primary font-semibold mb-1 text-xs uppercase tracking-wider">
-                                                    <Sparkles className="h-3 w-3" />
-                                                    AI Tutor
-                                                </div>
-                                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                                    {aiResponse}
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        <div className="flex gap-2">
-                                            <div className="flex-1 relative">
-                                                <input
-                                                    type="text"
-                                                    value={aiQuery}
-                                                    onChange={(e) => setAiQuery(e.target.value)}
-                                                    placeholder="Ask a question..."
-                                                    className="w-full pl-3 pr-10 py-2 rounded-md border bg-background text-sm outline-none focus:ring-1 focus:ring-primary"
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleAiAsk('explain')}
+                                    {activeTab === "notes" && (
+                                        <>
+                                            <div className="flex-1 p-4">
+                                                <textarea
+                                                    value={notes}
+                                                    onChange={(e) => setNotes(e.target.value)}
+                                                    placeholder="Start typing your notes..."
+                                                    className="w-full h-[500px] resize-none bg-transparent outline-none leading-relaxed placeholder:text-muted-foreground/40"
                                                 />
                                             </div>
-                                            <Button
-                                                size="sm"
-                                                disabled={isAiLoading}
-                                                onClick={() => handleAiAsk('explain')}
-                                            >
-                                                {isAiLoading ? <span className="animate-spin">⏳</span> : <Sparkles className="h-4 w-4" />}
-                                            </Button>
-                                        </div>
-                                        <div className="flex gap-2 justify-center">
-                                            <Button variant="outline" size="sm" onClick={() => handleAiAsk('refine')} disabled={isAiLoading} className="text-xs h-7">
-                                                Refine Notes
-                                            </Button>
-                                            <Button variant="outline" size="sm" onClick={() => handleAiAsk('socratic')} disabled={isAiLoading} className="text-xs h-7">
-                                                Test Me
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
-                            {activeTab === "summary" && (
-                                <div className="p-4 h-full flex flex-col">
-                                    <textarea
-                                        value={summary}
-                                        onChange={(e) => setSummary(e.target.value)}
-                                        placeholder="Write a summary of what you've learned..."
-                                        className="flex-1 w-full resize-none bg-transparent outline-none text-base leading-relaxed"
-                                    />
-                                </div>
-                            )}
+                                            {/* AI Assistant Section */}
+                                            <div className="border-t bg-muted/20 p-3 space-y-3 shrink-0">
+                                                {aiResponse && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="bg-primary/5 border border-primary/10 rounded-lg p-3 text-xs text-foreground/90 shadow-sm max-h-40 overflow-y-auto"
+                                                    >
+                                                        <div className="flex items-center gap-2 text-primary font-semibold mb-1 xs uppercase tracking-wider">
+                                                            <Sparkles className="h-3 w-3" />
+                                                            AI Analysis
+                                                        </div>
+                                                        <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+                                                            {aiResponse}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
 
-                            {activeTab === "visual" && (
-                                <div className="h-full w-full bg-white dark:bg-zinc-950">
-                                    <Scratchpad
-                                        initialData={visualData}
-                                        onSave={setVisualData}
-                                        isDark={true}
-                                    />
+                                                <div className="flex gap-2">
+                                                    <div className="flex-1 relative">
+                                                        <input
+                                                            type="text"
+                                                            value={aiQuery}
+                                                            onChange={(e) => setAiQuery(e.target.value)}
+                                                            placeholder="Ask about this video..."
+                                                            className="w-full pl-3 pr-8 py-2 rounded-md border bg-background text-xs outline-none focus:ring-1 focus:ring-primary h-9"
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleAiAsk('explain')}
+                                                        />
+                                                        <Sparkles className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 w-full">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleAiAsk('explain')}
+                                                        disabled={isAiLoading}
+                                                        className="flex-1 h-8 text-xs"
+                                                    >
+                                                        Explain Concept
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleAiAsk('refine')}
+                                                        disabled={isAiLoading}
+                                                        className="flex-1 h-8 text-xs"
+                                                    >
+                                                        Refine Notes
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {activeTab === "summary" && (
+                                        <div className="p-4 h-full flex flex-col">
+                                            <textarea
+                                                value={summary}
+                                                onChange={(e) => setSummary(e.target.value)}
+                                                placeholder="Draft your session summary..."
+                                                className="flex-1 w-full resize-none bg-transparent outline-none leading-relaxed placeholder:text-muted-foreground/40"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {activeTab === "visual" && (
+                                        <div className="h-full w-full bg-white dark:bg-zinc-950">
+                                            <Scratchpad
+                                                initialData={visualData}
+                                                onSave={setVisualData}
+                                                isDark={true}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

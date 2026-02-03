@@ -9,8 +9,8 @@ const genAI = new GoogleGenerativeAI(apiKey);
 export const tutorModel = genAI.getGenerativeModel({
     model: "gemini-2.5-flash-lite",
     generationConfig: {
-        maxOutputTokens: 500,
-        temperature: 0.7,
+        maxOutputTokens: 1000,
+        temperature: 0.5,
         responseMimeType: "application/json",
     },
 });
