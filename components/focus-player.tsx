@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-// Using base react-player with type casting to resolve Next.js/TypeScript compatibility issues
-import _ReactPlayer from "react-player";
-const ReactPlayer = _ReactPlayer as unknown as React.ComponentType<any>;
+// Dynamic import is strictly required for ReactPlayer in Next.js App Router to avoid hydration mismatch
+import dynamic from "next/dynamic";
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as unknown as React.ComponentType<any>;
 
 import {
     Maximize2,
@@ -186,7 +186,7 @@ export function FocusPlayer({
                 isFullscreen ? "h-screen fixed inset-0 z-50 bg-black" : ""
             )}
         >
-            {/* VIDEO SECTION - Cleaned up to remove overlay */}
+            {/* VIDEO SECTION */}
             <div
                 style={{
                     flexBasis: isFullscreen ? '100%' : `${splitRatio * 100}%`,
@@ -194,7 +194,7 @@ export function FocusPlayer({
                 }}
                 className="relative bg-black shrink-0 flex flex-col min-h-0 transition-[flex-basis,height] duration-100 ease-out z-10"
             >
-                {/* Back Button Overlay - Minimal and essential */}
+                {/* Back Button Overlay */}
                 <div className="absolute top-4 left-4 z-20 opacity-0 hover:opacity-100 transition-opacity duration-300">
                     <Link href="/dashboard" className="p-2 bg-black/60 text-white rounded-full hover:bg-black/80 backdrop-blur-md">
                         <ArrowLeft className="h-5 w-5" />
@@ -230,7 +230,7 @@ export function FocusPlayer({
                 </div>
             </div>
 
-            {/* DRAG HANDLE (Hidden in Fullscreen) */}
+            {/* DRAG HANDLE */}
             {!isFullscreen && (
                 <div
                     onMouseDown={handleMouseDown}
@@ -249,11 +249,11 @@ export function FocusPlayer({
                 </div>
             )}
 
-            {/* CONTENT / TABS SECTION (Hidden in Fullscreen) */}
+            {/* CONTENT / TABS SECTION */}
             {!isFullscreen && (
                 <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden relative">
 
-                    {/* NEW HEADER: Title + Actions */}
+                    {/* NEW HEADER */}
                     <div className="flex items-center justify-between px-4 py-2 border-b shrink-0 h-14 bg-background">
                         <div className="min-w-0 flex-1 mr-4">
                             <h1 className="font-semibold text-sm line-clamp-1" title={title}>{title}</h1>
