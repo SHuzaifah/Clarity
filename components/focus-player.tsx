@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-// Dynamic import is strictly required for ReactPlayer in Next.js App Router to avoid hydration mismatch
 import dynamic from "next/dynamic";
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as unknown as React.ComponentType<any>;
 
@@ -55,6 +54,8 @@ export function FocusPlayer({
     const [splitRatio, setSplitRatio] = useState(0.6);
     const [isDragging, setIsDragging] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+
+    const [playerReady, setPlayerReady] = useState(false);
 
     const [isBookmarked, setIsBookmarked] = useState(false);
 
@@ -133,6 +134,10 @@ export function FocusPlayer({
         setDuration(d);
     };
 
+    const handleReady = () => {
+        setPlayerReady(true);
+    };
+
     const handleAiAsk = async (action: "explain" | "refine" | "socratic") => {
         if (!notes && !aiQuery && action !== 'refine') return;
 
@@ -186,15 +191,16 @@ export function FocusPlayer({
                 isFullscreen ? "h-screen fixed inset-0 z-50 bg-black" : ""
             )}
         >
-            {/* VIDEO SECTION */}
             <div
                 style={{
                     flexBasis: isFullscreen ? '100%' : `${splitRatio * 100}%`,
                     height: isMobile && !isFullscreen ? `${splitRatio * 100}%` : 'auto'
                 }}
-                className="relative bg-black shrink-0 flex flex-col min-h-0 transition-[flex-basis,height] duration-100 ease-out z-10"
+                className={cn(
+                    "relative bg-black shrink-0 flex flex-col min-h-0 transition-[flex-basis,height] duration-100 ease-out z-10",
+                    !playerReady && "justify-center items-center"
+                )}
             >
-                {/* Back Button Overlay */}
                 <div className="absolute top-4 left-4 z-20 opacity-0 hover:opacity-100 transition-opacity duration-300">
                     <Link href="/dashboard" className="p-2 bg-black/60 text-white rounded-full hover:bg-black/80 backdrop-blur-md">
                         <ArrowLeft className="h-5 w-5" />
@@ -208,13 +214,13 @@ export function FocusPlayer({
                         width="100%"
                         height="100%"
                         playing={isPlaying}
+                        controls={true}
+                        onReady={handleReady}
                         onProgress={handleProgress}
                         onDuration={handleDuration}
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
                         onEnded={() => setIsPlaying(false)}
-                        controls={true}
-                        style={{ position: 'absolute', top: 0, left: 0 }}
                         config={{
                             youtube: {
                                 playerVars: {
@@ -230,7 +236,6 @@ export function FocusPlayer({
                 </div>
             </div>
 
-            {/* DRAG HANDLE */}
             {!isFullscreen && (
                 <div
                     onMouseDown={handleMouseDown}
@@ -249,12 +254,10 @@ export function FocusPlayer({
                 </div>
             )}
 
-            {/* CONTENT / TABS SECTION */}
             {!isFullscreen && (
                 <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden relative">
 
-                    {/* NEW HEADER */}
-                    <div className="flex items-center justify-between px-4 py-2 border-b shrink-0 h-14 bg-background">
+                    <div className="flex items-center justify-between p-4 border-b shrink-0 bg-background">
                         <div className="min-w-0 flex-1 mr-4">
                             <h1 className="font-semibold text-sm line-clamp-1" title={title}>{title}</h1>
                             {channelTitle && <p className="text-xs text-muted-foreground line-clamp-1">{channelTitle}</p>}
@@ -300,9 +303,8 @@ export function FocusPlayer({
                         </div>
                     </div>
 
-                    {/* Tabs Navigation */}
                     {activeTab !== 'info' && (
-                        <div className="flex items-center gap-1 px-2 border-b bg-muted/5 shrink-0">
+                        <div className="flex items-center gap-4 px-4 border-b bg-muted/5 shrink-0">
                             {[
                                 { id: "notes", icon: FileText, label: "Notes" },
                                 { id: "summary", icon: BrainCircuit, label: "Summary" },
@@ -312,10 +314,10 @@ export function FocusPlayer({
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id as Tab)}
                                     className={cn(
-                                        "flex items-center gap-2 px-3 py-2.5 text-xs font-medium transition-all rounded-t-sm outline-none",
+                                        "flex items-center gap-2 py-3 text-xs font-medium transition-all outline-none border-b-2",
                                         activeTab === tab.id
-                                            ? "text-foreground bg-background border-x border-t border-border/50 shadow-sm relative top-[1px]"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                            ? "text-primary border-primary"
+                                            : "text-muted-foreground border-transparent hover:text-foreground hover:border-muted-foreground/30"
                                     )}
                                 >
                                     <tab.icon className="h-3.5 w-3.5" />
@@ -325,7 +327,6 @@ export function FocusPlayer({
                         </div>
                     )}
 
-                    {/* Tab Panels */}
                     <div className="flex-1 relative overflow-hidden bg-background">
                         {activeTab === "notes" && (
                             <div className="h-full flex flex-col">
@@ -334,11 +335,11 @@ export function FocusPlayer({
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder="Start typing references, ideas, or questions..."
-                                        className="w-full h-full resize-none bg-transparent border-none outline-none leading-relaxed text-sm placeholder:text-muted-foreground/40 font-mono sm:font-sans p-4 focus:ring-0"
+                                        className="w-full h-full resize-none bg-transparent border-none outline-none leading-relaxed text-sm placeholder:text-muted-foreground/40 font-mono sm:font-sans p-6 focus:ring-0"
                                     />
                                 </div>
 
-                                <div className="p-3 border-t bg-muted/5 shrink-0">
+                                <div className="p-4 border-t bg-muted/5 shrink-0">
                                     {aiResponse && (
                                         <div className="mb-3 p-3 bg-primary/5 rounded-lg border border-primary/10 text-xs text-foreground/90 max-h-32 overflow-y-auto">
                                             <div className="flex items-center gap-2 text-primary font-semibold mb-1 xs uppercase tracking-wider">
@@ -370,15 +371,15 @@ export function FocusPlayer({
                         )}
 
                         {activeTab === "summary" && (
-                            <div className="h-full flex flex-col p-4 overflow-hidden">
+                            <div className="h-full flex flex-col p-6 overflow-hidden">
                                 <div className="flex justify-between items-center mb-4 shrink-0">
-                                    <h3 className="text-sm font-semibold text-muted-foreground">AI Summary</h3>
+                                    <h3 className="text-sm font-semibold text-muted-foreground">AI Study Notes</h3>
                                     <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => handleAiAsk('refine')}
                                         disabled={isAiLoading}
-                                        className="h-7 text-xs gap-2 px-2"
+                                        className="h-8 text-xs gap-2 px-3"
                                     >
                                         <Sparkles className="h-3 w-3" />
                                         Generate
