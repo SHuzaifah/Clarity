@@ -8,7 +8,6 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDuration(duration: string | number): string {
   if (!duration) return "";
 
-  // Handle seconds (number or string number)
   if (typeof duration === 'number' || !isNaN(Number(duration))) {
     const seconds = Number(duration);
     const h = Math.floor(seconds / 3600);
@@ -18,7 +17,6 @@ export function formatDuration(duration: string | number): string {
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
-  // Handle ISO 8601 (PT1H2M3S)
   if (typeof duration === 'string' && duration.startsWith('PT')) {
     const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
     if (!match) return "";

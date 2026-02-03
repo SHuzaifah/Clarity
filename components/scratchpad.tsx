@@ -17,25 +17,22 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
     const [isDrawing, setIsDrawing] = useState(false);
     const [mode, setMode] = useState<'pen' | 'eraser'>('pen');
     const [history, setHistory] = useState<string[]>([]);
+    const [initialized, setInitialized] = useState(false);
+    const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
     const getCtx = () => canvasRef.current?.getContext('2d');
 
-    const [initialized, setInitialized] = useState(false);
-
-    // Handle Resize & HiDPI first
     useEffect(() => {
         const updateSize = () => {
             if (containerRef.current && canvasRef.current) {
                 const dpr = window.devicePixelRatio || 1;
                 const { width, height } = containerRef.current.getBoundingClientRect();
 
-                // If dimensions haven't changed siginificantly, skip to avoid reset
                 if (canvasRef.current.width === width * dpr && canvasRef.current.height === height * dpr) {
                     if (!initialized) setInitialized(true);
                     return;
                 }
 
-                // Save content if initialized (to prevent clearing on resize)
                 let tempCanvas: HTMLCanvasElement | null = null;
                 if (initialized) {
                     tempCanvas = document.createElement('canvas');
@@ -45,22 +42,18 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
                     if (tempCtx) tempCtx.drawImage(canvasRef.current, 0, 0);
                 }
 
-                // Resize canvas to HiDPI
                 canvasRef.current.width = width * dpr;
                 canvasRef.current.height = height * dpr;
 
-                // Fix CSS size
                 canvasRef.current.style.width = `${width}px`;
                 canvasRef.current.style.height = `${height}px`;
 
-                // Scale context
                 const ctx = getCtx();
                 if (ctx) {
                     ctx.scale(dpr, dpr);
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
 
-                    // Restore content
                     if (tempCanvas) {
                         ctx.save();
                         ctx.scale(1 / dpr, 1 / dpr);
@@ -74,56 +67,34 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
         };
 
         window.addEventListener('resize', updateSize);
-        // Run immediately
         updateSize();
 
         return () => window.removeEventListener('resize', updateSize);
     }, [initialized]);
 
-    // Load initial data ONLY after initialization
     useEffect(() => {
         if (initialized && initialData && canvasRef.current) {
-            // Check if we already have content?
-            // If history is empty and we haven't drawn yet, load it.
-            // But checking history might be tricky if we want to support 'resume'.
-            // Simple check: clear canvas and draw image.
-
             const img = new Image();
             img.onload = () => {
                 const ctx = getCtx();
                 if (ctx && canvasRef.current) {
                     const dpr = window.devicePixelRatio || 1;
 
-                    // Clear first to be safe
                     ctx.save();
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
                     ctx.restore();
 
-                    // Calculate scale to fit OR draw 1:1 if it matches
-                    // If the image is from toDataURL, it is physical pixels.
-                    // If we draw it into logic coords (0,0, logicalWidth, logicalHeight), it will be upscaled by DPR (ctx.scale).
-                    // So we must Draw it at (0, 0, img.width / dpr, img.height / dpr) to match 1:1?
-                    // OR, simply: ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight); 
-                    // IF image size == logicalWidth * dpr.
-
-                    // Let's assume the image was saved from this device or similar.
-                    // We want to fit it to the canvas or show it 1:1.
-
                     const logicalWidth = canvasRef.current.width / dpr;
                     const logicalHeight = canvasRef.current.height / dpr;
 
                     ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight);
-
-                    // Save this as the first history state
                     saveHistory();
                 }
             };
             img.src = initialData;
         }
     }, [initialized, initialData]);
-
-    const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
     const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
         const ctx = getCtx();
@@ -134,12 +105,10 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
 
         setLastPoint({ x: offsetX, y: offsetY });
 
-        // Set up drawing style
         ctx.lineWidth = mode === 'pen' ? 2.5 : 20;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        // Theme-aware colors
         const bgColor = isDark ? '#09090b' : '#ffffff';
         const penColor = isDark ? '#ffffff' : '#000000';
         ctx.strokeStyle = mode === 'pen' ? penColor : bgColor;
@@ -157,7 +126,6 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
 
         const { offsetX, offsetY } = getCoordinates(e);
 
-        // Use quadratic curve for smooth drawing
         const midX = (lastPoint.x + offsetX) / 2;
         const midY = (lastPoint.y + offsetY) / 2;
 
@@ -210,7 +178,6 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
             const ctx = getCtx();
             if (ctx && canvasRef.current) {
                 const dpr = window.devicePixelRatio || 1;
-                // Clear physical pixels
                 ctx.save();
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -258,7 +225,6 @@ export default function Scratchpad({ initialData, onSave, isDark = false }: Scra
                 className="w-full h-full block"
             />
 
-            {/* Toolbar */}
             <div className={cn(
                 "absolute top-4 left-1/2 -translate-x-1/2 flex gap-1 p-1 backdrop-blur border shadow-sm rounded-lg",
                 isDark

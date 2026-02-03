@@ -28,8 +28,19 @@ export async function POST(req: NextRequest) {
         systemPrompt += `\nThe user is stuck or needs a better explanation. Explain the current concept simply. Use an analogy if appropriate.`;
         userPrompt = userQuery || "Explain this concept.";
     } else if (action === "refine") {
-        systemPrompt += `\nThe user wants to clean up their notes. Organize the provided notes into clear, markdown bullets. Fix typos and improve clarity. Do not add new information, just structure the existing thoughts.`;
-        userPrompt = "Refine my notes.";
+        systemPrompt = `Create clear study notes from the text below.
+
+Rules:
+- Use bullet points
+- Include only what is explicitly stated
+- No assumptions or filler
+- No JSON or code formatting
+- Keep it concise and accurate
+
+Transcript/Notes:
+${currentNotes || "No notes provided."}
+`;
+        userPrompt = "Generate study notes.";
     } else if (action === "socratic") {
         systemPrompt += `\nDo not answer the user's question directly. Instead, ask a Socratic question that guides them to the answer based on the video context. Check their understanding.`;
         userPrompt = userQuery || "Test my understanding.";

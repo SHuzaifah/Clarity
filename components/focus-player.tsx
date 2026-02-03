@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+// Using base react-player with type casting to resolve Next.js/TypeScript compatibility issues
 import _ReactPlayer from "react-player";
-const ReactPlayer = _ReactPlayer as any;
+const ReactPlayer = _ReactPlayer as unknown as React.ComponentType<any>;
+
 import {
     Maximize2,
     Minimize2,
@@ -49,16 +51,13 @@ export function FocusPlayer({
     const [duration, setDuration] = useState(0);
     const [activeTab, setActiveTab] = useState<Tab>("notes");
 
-    // Layout State
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [splitRatio, setSplitRatio] = useState(0.6); // 60% Video
+    const [splitRatio, setSplitRatio] = useState(0.6);
     const [isDragging, setIsDragging] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
-    // Bookmarks (Video Level)
     const [isBookmarked, setIsBookmarked] = useState(false);
 
-    // Notes & AI State
     const [notes, setNotes] = useState("");
     const [summary, setSummary] = useState("");
     const [visualData, setVisualData] = useState<string | undefined>(undefined);
@@ -69,7 +68,6 @@ export function FocusPlayer({
     const playerRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Detect Mount & Mobile
     useEffect(() => {
         setHasMounted(true);
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -78,7 +76,6 @@ export function FocusPlayer({
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Resize Handler
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault();
         setIsDragging(true);
@@ -91,12 +88,10 @@ export function FocusPlayer({
         let newRatio = 0.6;
 
         if (isMobile) {
-            // Vertical split
             const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
             const relativeY = clientY - containerRect.top;
             newRatio = Math.max(0.2, Math.min(0.8, relativeY / containerRect.height));
         } else {
-            // Horizontal split
             const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
             const relativeX = clientX - containerRect.left;
             newRatio = Math.max(0.2, Math.min(0.8, relativeX / containerRect.width));
@@ -142,7 +137,6 @@ export function FocusPlayer({
         if (!notes && !aiQuery && action !== 'refine') return;
 
         setIsAiLoading(true);
-        // setAiResponse(null); // Optional: clear previous response
 
         try {
             const res = await fetch("/api/gemini/tutor", {
@@ -169,7 +163,6 @@ export function FocusPlayer({
                 }
                 setAiResponse(cleanResponse);
 
-                // If it's a summary generation, also update the summary text
                 if (activeTab === 'summary' && action === 'refine') {
                     setSummary(cleanResponse);
                 }
@@ -193,7 +186,6 @@ export function FocusPlayer({
                 isFullscreen ? "h-screen fixed inset-0 z-50 bg-black" : ""
             )}
         >
-            {/* VIDEO SECTION */}
             <div
                 style={{
                     flexBasis: isFullscreen ? '100%' : `${splitRatio * 100}%`,
@@ -201,7 +193,7 @@ export function FocusPlayer({
                 }}
                 className="relative bg-black shrink-0 flex flex-col min-h-0 transition-[flex-basis,height] duration-100 ease-out group"
             >
-                {/* Overlay Header */}
+                {/* Header Overlay */}
                 <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="flex items-center gap-3 pointer-events-auto">
                         <Link href="/dashboard" className="p-2 bg-black/40 text-white rounded-full hover:bg-black/60 transition-colors backdrop-blur-md">
@@ -251,7 +243,7 @@ export function FocusPlayer({
                     </div>
                 </div>
 
-                <div className="w-full h-full">
+                <div className="w-full h-full relative z-0 bg-black">
                     <ReactPlayer
                         ref={playerRef}
                         url={`https://www.youtube.com/watch?v=${videoId}`}
@@ -264,7 +256,8 @@ export function FocusPlayer({
                         onPause={() => setIsPlaying(false)}
                         onEnded={() => setIsPlaying(false)}
                         controls={true}
-                        light={false}
+
+                        style={{ position: 'absolute', top: 0, left: 0 }}
                         config={{
                             youtube: {
                                 playerVars: {
@@ -280,7 +273,6 @@ export function FocusPlayer({
                 </div>
             </div>
 
-            {/* DRAG HANDLE (Hidden in Fullscreen) */}
             {!isFullscreen && (
                 <div
                     onMouseDown={handleMouseDown}
@@ -299,11 +291,9 @@ export function FocusPlayer({
                 </div>
             )}
 
-            {/* NOTES / TABS SECTION (Hidden in Fullscreen) */}
             {!isFullscreen && (
                 <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden relative border-l border-t border-border/40">
 
-                    {/* Tabs */}
                     <div className="flex items-center border-b px-2 bg-muted/20 shrink-0">
                         {[
                             { id: "notes", icon: FileText, label: "Notes" },
@@ -314,7 +304,7 @@ export function FocusPlayer({
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as Tab)}
                                 className={cn(
-                                    "flex items-center gap-2 px-4 py-3 text-xs font-medium transition-colors relative",
+                                    "flex items-center gap-2 px-4 py-3 text-xs font-medium transition-colors relative outline-none focus:bg-muted/50",
                                     activeTab === tab.id
                                         ? "text-primary font-semibold bg-muted/30 rounded-t-lg"
                                         : "text-muted-foreground hover:text-foreground hover:bg-muted/10 rounded-t-lg"
@@ -327,7 +317,6 @@ export function FocusPlayer({
                     </div>
 
                     <div className="flex-1 relative overflow-hidden">
-                        {/* NOTES TAB */}
                         {activeTab === "notes" && (
                             <div className="h-full flex flex-col">
                                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -335,11 +324,10 @@ export function FocusPlayer({
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder="Start typing references, ideas, or questions..."
-                                        className="w-full h-full resize-none bg-transparent outline-none leading-relaxed text-sm placeholder:text-muted-foreground/40 font-mono sm:font-sans"
+                                        className="w-full h-full resize-none bg-transparent outline-none leading-relaxed text-sm placeholder:text-muted-foreground/40 font-mono sm:font-sans p-1 focus:ring-0"
                                     />
                                 </div>
 
-                                {/* AI Inline Integration */}
                                 <div className="p-3 border-t bg-muted/10 shrink-0">
                                     {aiResponse && (
                                         <div className="mb-3 p-3 bg-primary/5 rounded-lg border border-primary/10 text-xs text-foreground/90 max-h-32 overflow-y-auto">
@@ -371,7 +359,6 @@ export function FocusPlayer({
                             </div>
                         )}
 
-                        {/* SUMMARY TAB */}
                         {activeTab === "summary" && (
                             <div className="h-full flex flex-col p-4 overflow-hidden">
                                 <div className="flex justify-between items-center mb-4 shrink-0">
@@ -396,7 +383,6 @@ export function FocusPlayer({
                             </div>
                         )}
 
-                        {/* VISUAL TAB */}
                         {activeTab === "visual" && (
                             <div className="h-full w-full bg-white dark:bg-zinc-950">
                                 <Scratchpad
@@ -407,7 +393,6 @@ export function FocusPlayer({
                             </div>
                         )}
 
-                        {/* INFO TAB (Triggered from Header) */}
                         {activeTab === "info" && (
                             <div className="h-full overflow-y-auto p-6">
                                 <h1 className="text-xl font-bold mb-2">{title}</h1>

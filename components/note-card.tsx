@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { FileText, Calendar, MoreVertical, Download, Copy, Share2 } from "lucide-react";
+import { FileText, Calendar, Copy, Download, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { jsPDF } from "jspdf";
-import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,12 +13,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface NoteItemProps {
-    item: any; // Using any for simplicity matching the supabase shape, but ideally strictly typed
+    item: any;
 }
 
 export function NoteCard({ item }: NoteItemProps) {
     const handleExport = (e: React.MouseEvent, format: 'md' | 'pdf' | 'txt') => {
-        e.preventDefault(); // Prevent Link navigation
+        e.preventDefault();
         e.stopPropagation();
 
         const title = item.title || "Untitled Video";
@@ -124,10 +122,9 @@ ${notes.jot || "No notes."}
     return (
         <Link
             href={`/watch/${item.video_id}`}
-            className="group block h-full select-none" // added select-none to prevent text selection when clicking menu
+            className="group block h-full select-none"
         >
             <div className="h-full border rounded-xl bg-card hover:shadow-lg hover:border-primary/30 hover:-translate-y-1 transition-all duration-200 p-5 flex flex-col relative">
-                {/* Export Menu Button - Positioned absolute top-right */}
                 <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -135,7 +132,7 @@ ${notes.jot || "No notes."}
                                 variant="secondary"
                                 size="icon"
                                 className="h-8 w-8 rounded-full shadow-sm bg-background/80 backdrop-blur-sm"
-                                onClick={(e) => e.stopPropagation()} // Stop navigation
+                                onClick={(e) => e.stopPropagation()}
                             >
                                 <Share2 className="h-4 w-4" />
                             </Button>
@@ -169,7 +166,6 @@ ${notes.jot || "No notes."}
                 </h3>
 
                 <div className="flex-1 space-y-3">
-                    {/* Canvas Preview */}
                     {item.notes.canvas && typeof item.notes.canvas === 'string' && (
                         <div className="w-full h-32 bg-white dark:bg-zinc-900 rounded-lg border-2 flex items-center justify-center overflow-hidden relative shadow-sm">
                             <img
@@ -180,7 +176,6 @@ ${notes.jot || "No notes."}
                         </div>
                     )}
 
-                    {/* Preview of note content */}
                     {(item.notes.jot || item.notes.summary) && (
                         <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
                             {item.notes.jot || item.notes.summary}
