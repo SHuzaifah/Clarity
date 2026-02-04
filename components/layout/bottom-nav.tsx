@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Library, FileText, User, Trophy } from "lucide-react"
+import { Home, Library, FileText, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function BottomNav() {
@@ -28,11 +28,7 @@ export function BottomNav() {
             href: "/profile",
             icon: User,
         },
-        {
-            title: "Career",
-            href: "/career",
-            icon: Trophy,
-        },
+
     ]
 
     return (
