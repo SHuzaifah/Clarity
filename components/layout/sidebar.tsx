@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Library, Settings, History, FileText, User, ChevronLeft, ChevronRight, Bookmark } from "lucide-react"
+import { Home, Library, Settings, History, FileText, User, ChevronLeft, ChevronRight, Bookmark, Trophy } from "lucide-react"
 import { useAppShell } from "./app-shell"
 import { Button } from "@/components/ui/button"
 import { memo } from "react"
@@ -13,6 +13,11 @@ const sidebarItems = [
         title: "Home",
         href: "/dashboard",
         icon: Home,
+    },
+    {
+        title: "Career",
+        href: "/career",
+        icon: Trophy,
     },
     {
         title: "Library",
