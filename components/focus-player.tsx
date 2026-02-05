@@ -2,7 +2,10 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as unknown as React.ComponentType<any>;
+
+const ReactPlayer = dynamic(() => import("react-player").then(mod => mod.default), {
+    ssr: false
+}) as any;
 
 import {
     Maximize2,
@@ -215,23 +218,21 @@ export function FocusPlayer({
                         height="100%"
                         playing={isPlaying}
                         controls={true}
+                        config={{
+                            youtube: {
+                                playerVars: {
+                                    modestbranding: 1,
+                                    rel: 0,
+                                    showinfo: 0
+                                }
+                            }
+                        }}
                         onReady={handleReady}
                         onProgress={handleProgress}
                         onDuration={handleDuration}
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
                         onEnded={() => setIsPlaying(false)}
-                        config={{
-                            youtube: {
-                                playerVars: {
-                                    showinfo: 0,
-                                    modestbranding: 1,
-                                    rel: 0,
-                                    playsinline: 1,
-                                    origin: typeof window !== 'undefined' ? window.location.origin : undefined
-                                }
-                            }
-                        }}
                     />
                 </div>
             </div>
