@@ -74,11 +74,13 @@ export function FocusPlayer({
 
     useEffect(() => {
         setHasMounted(true);
+        console.log('🎥 FocusPlayer mounted with videoId:', videoId);
+        console.log('🔗 Full URL:', `https://www.youtube.com/watch?v=${videoId}`);
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    }, [videoId]);
 
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault();
@@ -138,7 +140,12 @@ export function FocusPlayer({
     };
 
     const handleReady = () => {
+        console.log('✅ ReactPlayer is ready');
         setPlayerReady(true);
+    };
+
+    const handleError = (error: any) => {
+        console.error('❌ ReactPlayer error:', error);
     };
 
     const handleAiAsk = async (action: "explain" | "refine" | "socratic") => {
@@ -210,30 +217,47 @@ export function FocusPlayer({
                     </Link>
                 </div>
 
-                <div className="w-full h-full relative">
-                    <ReactPlayer
-                        ref={playerRef}
-                        url={`https://www.youtube.com/watch?v=${videoId}`}
-                        width="100%"
-                        height="100%"
-                        playing={isPlaying}
-                        controls={true}
-                        config={{
-                            youtube: {
-                                playerVars: {
-                                    modestbranding: 1,
-                                    rel: 0,
-                                    showinfo: 0
+                <div className="w-full h-full relative" style={{ minHeight: '400px' }}>
+                    {!playerReady && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 z-10">
+                            <div className="text-center space-y-3">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+                                <p className="text-white text-sm">Loading video...</p>
+                                <p className="text-white/60 text-xs">Video ID: {videoId}</p>
+                            </div>
+                        </div>
+                    )}
+                    {videoId ? (
+                        <ReactPlayer
+                            ref={playerRef}
+                            url={`https://www.youtube.com/watch?v=${videoId}`}
+                            width="100%"
+                            height="100%"
+                            playing={isPlaying}
+                            controls={true}
+                            playsinline
+                            config={{
+                                youtube: {
+                                    playerVars: {
+                                        modestbranding: 1,
+                                        rel: 0,
+                                        showinfo: 0
+                                    }
                                 }
-                            }
-                        }}
-                        onReady={handleReady}
-                        onProgress={handleProgress}
-                        onDuration={handleDuration}
-                        onPlay={() => setIsPlaying(true)}
-                        onPause={() => setIsPlaying(false)}
-                        onEnded={() => setIsPlaying(false)}
-                    />
+                            }}
+                            onReady={handleReady}
+                            onProgress={handleProgress}
+                            onDuration={handleDuration}
+                            onPlay={() => setIsPlaying(true)}
+                            onPause={() => setIsPlaying(false)}
+                            onEnded={() => setIsPlaying(false)}
+                            onError={handleError}
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-white">
+                            <p>No video ID provided</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
